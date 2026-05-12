@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} — SkillBridge{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Video info bar */
+  .video-info { padding:14px 20px; border-bottom:1px solid var(--border); }
+  .video-info h1 { font-size:16px; font-weight:700; line-height:1.35; margin-bottom:3px; }
+  .video-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  /* Notes split */
+  .notes-area { width:100%; min-height:200px; resize:vertical; }
+  /* Related course row */
+  .related-row { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; transition:background var(--transition); border-bottom:1px solid var(--border); }
+  .related-row:hover { background:rgba(255,255,255,0.03); }
+  .related-row.active { background:var(--brand-dim); }
+  .related-thumb { width:80px; height:45px; border-radius:4px; overflow:hidden; background:var(--bg-raised); flex-shrink:0; position:relative; }
+  .related-thumb img { width:100%; height:100%; object-fit:cover; }
+  /* Outline progress header */
+  .outline-progress { padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  /* Mobile outline toggle */
+  #outline-toggle { display:none; }
+  @media (max-width:1024px) { #outline-toggle { display:flex; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="learn-shell">
+
+  <!-- ── TOPBAR ── -->
+  <header class="learn-topbar">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+      <a href="/dashboard" class="btn btn-ghost btn-sm" style="padding:5px 10px;flex-shrink:0;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </a>
+      <a href="/" class="logo" style="flex-shrink:0;">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="13" height="13" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:15px;">Skill<span>Bridge</span></span>
+      </a>
+      <span style="color:var(--border-md);font-size:16px;flex-shrink:0;">›</span>
+      <p style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted);">{{ course.title }}</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <!-- Progress pill -->
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 10px;border-radius:99px;background:var(--bg-raised);border:1px solid var(--border);">
+        <div style="width:60px;" class="progress-track"><div class="progress-fill" id="top-prog" style="width:{{ enrollment.progress }}%;"></div></div>
+        <span id="top-pct" style="font-size:12px;font-weight:700;color:var(--brand-light);">{{ enrollment.progress }}%</span>
+      </div>
+      <!-- Mobile outline toggle -->
+      <button id="outline-toggle" onclick="toggleOutline()" class="btn btn-ghost btn-sm" aria-label="Course outline">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── BODY: content left + outline right ── -->
+  <div class="learn-body">
+
+    <!-- LEFT: video + tabs -->
+    <div class="learn-content">
+
+      <!-- 16:9 video -->
+      <div style="position:relative;padding-top:56.25%;background:#000;">
+        <iframe id="yt-player"
+          src="https://www.youtube.com/embed/{{ course.youtube_id }}?rel=0&modestbranding=1"
+          style="position:absolute;inset:0;width:100%;height:100%;"
+          frameborder="0"
+          allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+
+      <!-- Video info -->
+      <div class="video-info">
+        <h1 id="video-title">{{ modules[0].title if modules else course.title }}</h1>
+        <p style="font-size:13px;color:var(--text-muted);">{{ course.instructor }} · <span class="badge badge-blue" style="font-size:10px;">{{ course.level }}</span></p>
+        <div class="video-actions">
+          <button onclick="markComplete()" id="complete-btn" class="btn btn-primary btn-sm">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            Mark Complete
+          </button>
+          <a href="/quiz/{{ course.id }}" class="btn btn-sm" style="background:#7c3aed;color:#fff;">🧠 Take Quiz</a>
+          <button onclick="toggleBookmark()" id="bookmark-btn" class="btn btn-ghost btn-sm">🔖 Bookmark</button>
+          <a href="/certificate/{{ course.id }}" class="btn btn-ghost btn-sm">🏅 Certificate</a>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        {% for tab in ["Overview","Notes","Resources","Q&A","Videos"] %}
+        <button class="tab-btn {% if loop.first %}active{% endif %}" id="tab-{{ tab }}" onclick="switchTab('{{ tab }}')">{{ tab }}</button>
+        {% endfor %}
+      </div>
+
+      <!-- ── OVERVIEW ── -->
+      <div class="tab-panel active" id="panel-Overview">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+          {% for icon,label,val in [("⏱","Duration",course.duration_hrs|string+"h"),("📊","Level",course.level),("🌐","Language","Hindi / English")] %}
+          <div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:var(--radius);background:var(--bg-raised);border:1px solid var(--border);">
+            <span style="font-size:20px;">{{ icon }}</span>
+            <div><p style="font-size:10px;color:var(--text-faint);">{{ label }}</p><p style="font-size:13px;font-weight:600;margin-top:1px;">{{ val }}</p></div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="card-flat" style="padding:16px;">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">About This Course</h3>
+          <p style="font-size:13px;line-height:1.7;color:var(--text-muted);">{{ course.description }}</p>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+            <h4 style="font-size:13px;font-weight:700;margin-bottom:10px;">What You'll Learn</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+              {% for item in ["Industry-standard tools","Real-world projects","Job-ready portfolio","Certificate of completion","Mentor support","Lifetime access"] %}
+              <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-muted);"><span style="color:var(--success);flex-shrink:0;">✓</span>{{ item }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── NOTES ── -->
+      <div class="tab-panel" id="panel-Notes">
+        <div class="notes-split">
+          <!-- Course notes -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <h3 style="font-size:14px;font-weight:700;">📖 Course Notes</h3>
+              {% if course_notes %}
+              <button onclick="translateNotes()" class="btn btn-ghost btn-sm">🌐 Translate</button>
+              {% endif %}
+            </div>
+            {% if course_notes %}
+            <div id="notes-lang-info" style="display:none;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+              <span class="badge badge-blue" style="font-size:10px;">Translated: <span id="notes-lang-label"></span></span>
+              <button onclick="resetNotes()" style="font-size:11px;color:var(--text-faint);background:none;border:none;cursor:pointer;">↩ Original</button>
+            </div>
+            <pre id="course-notes-text" style="font-size:12px;line-height:1.75;color:var(--text-muted);white-space:pre-wrap;font-family:inherit;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius);padding:14px;max-height:400px;overflow-y:auto;">{{ course_notes }}</pre>
+            {% else %}
+            <div style="padding:24px;text-align:center;color:var(--text-faint);font-size:13px;background:var(--bg-raised);border-radius:var(--radius);border:1px solid var(--border);">No course notes available for this module.</div>
+            {% endif %}
+          </div>
+          <!-- My notes -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <h3 style="font-size:14px;font-weight:700;">✏️ My Notes</h3>
+              <button onclick="saveNote()" class="btn btn-ghost btn-sm">Save</button>
+            </div>
+            <textarea id="notes-area" class="input notes-area" placeholder="Type your notes here… auto-saved locally."></textarea>
+            <p id="note-saved" style="display:none;font-size:12px;color:var(--success);margin-top:5px;">✓ Saved!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RESOURCES ── -->
+      <div class="tab-panel" id="panel-Resources">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          {% for icon,name,ftype,size in [("📄","Course Slides","PDF","2.4 MB"),("📓","Code Exercises","ZIP","1.1 MB"),("🔗","Documentation","URL","—"),("📊","Practice Dataset","CSV","340 KB"),("🎯","Assignment Checklist","PDF","128 KB")] %}
+          <div class="card-flat" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:var(--bg-raised);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">{{ icon }}</div>
+              <div><p style="font-size:13px;font-weight:500;">{{ name }}</p><p style="font-size:11px;color:var(--text-faint);">{{ ftype }} · {{ size }}</p></div>
+            </div>
+            <button class="btn btn-ghost btn-sm">Download</button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ── Q&A ── -->
+      <div class="tab-panel" id="panel-Q&A">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          {% for q,a,votes in [
+            ("How do I install Python on Windows?","Download from python.org and run the installer. Check 'Add Python to PATH'.",24),
+            ("List vs tuple — what's the difference?","Lists are mutable; tuples are immutable and slightly faster.",18),
+            ("Is this certificate accepted by employers?","Yes — recognized by 500+ MSME employers across India.",31),
+          ] %}
+          <div class="card-flat" style="padding:14px;">
+            <p style="font-size:13px;font-weight:600;margin-bottom:7px;">{{ q }}</p>
+            <div style="padding:9px 11px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.14);margin-bottom:7px;">
+              <p style="font-size:13px;color:var(--text-muted);">{{ a }}</p>
+            </div>
+            <div style="display:flex;gap:10px;font-size:12px;color:var(--text-faint);">
+              <button style="background:none;border:none;cursor:pointer;color:inherit;">👍 {{ votes }}</button>
+              <button style="background:none;border:none;cursor:pointer;color:inherit;">Reply</button>
+            </div>
+          </div>
+          {% endfor %}
+          <div class="card-flat" style="padding:14px;">
+            <p style="font-size:13px;font-weight:600;margin-bottom:8px;">Ask a Question</p>
+            <textarea rows="3" placeholder="What do you want to know?" class="input" style="resize:none;font-size:13px;margin-bottom:8px;"></textarea>
+            <button class="btn btn-primary btn-sm">Post Question</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIDEOS ── -->
+      <div class="tab-panel" id="panel-Videos">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:2px;">Suggested Videos</h3>
+            <p style="font-size:12px;color:var(--text-faint);">Top picks for this topic in your language</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="font-size:12px;color:var(--text-faint);">Language:</span>
+            <select id="video-lang-select" onchange="loadVideos(this.value)" class="input" style="width:auto;font-size:12px;padding:5px 28px 5px 9px;">
+              {% for code,label in supported_languages.items() %}
+              <option value="{{ code }}" {% if code==user_language %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div id="video-list" style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+          <div style="text-align:center;padding:32px;color:var(--text-faint);font-size:13px;">Click the Videos tab to load suggestions…</div>
+        </div>
+        <div id="video-player-section" style="display:none;margin-top:14px;">
+          <div class="card-flat" style="overflow:hidden;">
+            <div style="position:relative;padding-top:56.25%;"><iframe id="suggested-yt-player" src="" style="position:absolute;inset:0;width:100%;height:100%;" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe></div>
+            <div style="padding:12px 14px;">
+              <p id="suggested-video-title" style="font-size:14px;font-weight:600;margin-bottom:3px;"></p>
+              <p id="suggested-video-channel" style="font-size:12px;color:var(--text-faint);"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /learn-content -->
+
+    <!-- ── RIGHT: Course Outline ── -->
+    <aside class="learn-outline" id="course-outline">
+
+      <!-- Header -->
+      <div class="outline-progress">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h2 style="font-size:13px;font-weight:700;">Course Content</h2>
+          <button onclick="toggleOutline()" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:18px;line-height:1;display:none;" id="outline-close">×</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="progress-track" style="flex:1;"><div class="progress-fill" id="outline-prog" style="width:{{ enrollment.progress }}%;"></div></div>
+          <span style="font-size:11px;font-weight:700;color:var(--brand-light);flex-shrink:0;">{{ enrollment.progress }}%</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-faint);margin-top:5px;">{{ modules|selectattr('completed')|list|length }} / {{ modules|length }} completed</p>
+      </div>
+
+      <!-- Module sections -->
+      <div style="flex:1;overflow-y:auto;">
+        {% for mod in modules %}
+        <div class="outline-section">
+          <div class="outline-section-header {% if loop.first %}open{% endif %}" onclick="toggleSection(this)">
+            <div style="min-width:0;">
+              <p style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ mod.title }}</p>
+              <p style="font-size:10px;color:var(--text-faint);margin-top:1px;">{{ mod.duration }}</p>
+            </div>
+            <span class="chev">▼</span>
+          </div>
+          <div class="outline-lessons {% if loop.first %}open{% endif %}">
+            <div class="outline-lesson {% if loop.first %}active{% endif %} {% if mod.completed %}done{% endif %}"
+                 data-idx="{{ loop.index0 }}"
+                 data-title="{{ mod.title }}"
+                 onclick="selectLesson(this)">
+              <span class="lesson-num" id="lnum-{{ loop.index0 }}">{% if mod.completed %}✓{% else %}{{ loop.index }}{% endif %}</span>
+              <div style="min-width:0;flex:1;">
+                <p style="font-size:12px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ mod.title }}</p>
+              </div>
+              {% if mod.completed %}<span style="font-size:10px;color:var(--success);flex-shrink:0;">✓</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Related courses -->
+      <div style="border-top:1px solid var(--border);flex-shrink:0;">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-faint);padding:10px 14px 6px;">Up Next</p>
+        {% for c in all_courses if c.id != course.id %}
+        <div class="related-row" onclick="window.location='/learn/{{ c.id }}'">
+          <div class="related-thumb">
+            <img src="https://img.youtube.com/vi/{{ c.youtube_id }}/mqdefault.jpg" alt="{{ c.title }}" onerror="this.style.display='none'"/>
+          </div>
+          <div style="min-width:0;flex:1;">
+            <p style="font-size:12px;font-weight:500;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ c.title }}</p>
+            <p style="font-size:10px;color:var(--text-faint);margin-top:2px;">{{ c.duration_hrs }}h · Free</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+    </aside><!-- /learn-outline -->
+
+  </div><!-- /learn-body -->
+</div><!-- /learn-shell -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const COURSE_ID = {{ course.id }};
+const USER_LANG = "{{ user_language }}";
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('notes_' + COURSE_ID);
+  if (saved) document.getElementById('notes-area').value = saved;
+  // Auto-save notes on input
+  document.getElementById('notes-area').addEventListener('input', () => {
+    clearTimeout(window._notesTimer);
+    window._notesTimer = setTimeout(saveNote, 1200);
+  });
+  // Show close btn on mobile outline
+  if (window.innerWidth <= 1024) {
+    const cb = document.getElementById('outline-close');
+    if (cb) cb.style.display = 'block';
+  }
+});
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name)?.classList.add('active');
+  document.getElementById('panel-' + name)?.classList.add('active');
+  if (name === 'Videos') loadVideos(document.getElementById('video-lang-select').value);
+}
+
+// ── Outline section toggle ────────────────────────────────────────────────────
+function toggleSection(header) {
+  const lessons = header.nextElementSibling;
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  lessons.classList.toggle('open', !isOpen);
+}
+
+// ── Lesson selection ──────────────────────────────────────────────────────────
+function selectLesson(el) {
+  document.querySelectorAll('.outline-lesson').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+  const title = el.dataset.title;
+  document.getElementById('video-title').textContent = title;
+  document.getElementById('current-mod-title')?.textContent && (document.getElementById('current-mod-title').textContent = title);
+  // On mobile, close outline after selection
+  if (window.innerWidth <= 1024) closeOutline();
+}
+
+// ── Mobile outline ────────────────────────────────────────────────────────────
+function toggleOutline() {
+  const outline = document.getElementById('course-outline');
+  outline.classList.toggle('mobile-open');
+}
+function closeOutline() {
+  document.getElementById('course-outline').classList.remove('mobile-open');
+}
+
+// ── Mark complete ─────────────────────────────────────────────────────────────
+async function markComplete() {
+  const btn = document.getElementById('complete-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/complete-module', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({course_id: COURSE_ID})
+    });
+    const data = await res.json();
+    if (data.progress !== undefined) {
+      const pct = data.progress + '%';
+      document.getElementById('top-prog').style.width = pct;
+      document.getElementById('top-pct').textContent = data.progress + '%';
+      document.getElementById('outline-prog').style.width = pct;
+    }
+    btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completed';
+    btn.style.background = 'var(--success)';
+    // Mark active lesson done
+    const active = document.querySelector('.outline-lesson.active');
+    if (active) {
+      active.classList.add('done');
+      const num = active.querySelector('.lesson-num');
+      if (num) num.textContent = '✓';
+    }
+  } catch { btn.disabled = false; btn.textContent = 'Mark Complete'; }
+}
+
+// ── Bookmark ──────────────────────────────────────────────────────────────────
+function toggleBookmark() {
+  const key = 'bm_' + COURSE_ID;
+  const on = !localStorage.getItem(key);
+  localStorage.setItem(key, on ? '1' : '');
+  document.getElementById('bookmark-btn').textContent = on ? '🔖 Bookmarked' : '🔖 Bookmark';
+}
+// Apply on load
+if (localStorage.getItem('bm_' + COURSE_ID)) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const b = document.getElementById('bookmark-btn');
+    if (b) b.textContent = '🔖 Bookmarked';
+  });
+}
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+function saveNote() {
+  localStorage.setItem('notes_' + COURSE_ID, document.getElementById('notes-area').value);
+  const msg = document.getElementById('note-saved');
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; }, 1800);
+}
+
+const _origNotes = document.getElementById('course-notes-text')?.textContent || '';
+async function translateNotes() {
+  if (USER_LANG === 'en') return;
+  try {
+    const res = await fetch('/api/translate', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: _origNotes, target_lang: USER_LANG})
+    });
+    const d = await res.json();
+    if (d.translated) {
+      document.getElementById('course-notes-text').textContent = d.translated;
+      document.getElementById('notes-lang-label').textContent = USER_LANG.toUpperCase();
+      document.getElementById('notes-lang-info').style.display = 'flex';
+    }
+  } catch {}
+}
+function resetNotes() {
+  document.getElementById('course-notes-text').textContent = _origNotes;
+  document.getElementById('notes-lang-info').style.display = 'none';
+}
+
+// ── Video suggestions ─────────────────────────────────────────────────────────
+let _videosLang = null;
+async function loadVideos(lang) {
+  if (_videosLang === lang) return;
+  _videosLang = lang;
+  const list = document.getElementById('video-list');
+  list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-faint);font-size:13px;">Loading…</div>';
+  try {
+    const res = await fetch(`/api/suggested-videos?course_id=${COURSE_ID}&lang=${lang}`);
+    const data = await res.json();
+    const videos = data.videos || [];
+    if (!videos.length) {
+      list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-faint);font-size:13px;">No videos found.</div>';
+      return;
+    }
+    list.innerHTML = videos.map(v => `
+      <div onclick="playVideo('${esc(v.video_id)}','${esc(v.title)}','${esc(v.channel)}')"
+           style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background var(--transition);"
+           onmouseover="this.style.background='var(--bg-raised)'" onmouseout="this.style.background=''">
+        <div style="position:relative;width:90px;height:51px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--bg-raised);">
+          <img src="https://img.youtube.com/vi/${esc(v.video_id)}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;">
+              <svg width="9" height="9" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
+        </div>
+        <div style="min-width:0;flex:1;">
+          <p style="font-size:12px;font-weight:500;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(v.title)}</p>
+          <p style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(v.channel)}</p>
+        </div>
+      </div>`).join('');
+  } catch { list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-faint);font-size:13px;">Failed to load.</div>'; }
+}
+
+function playVideo(id, title, channel) {
+  document.getElementById('suggested-yt-player').src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+  document.getElementById('suggested-video-title').textContent = title;
+  document.getElementById('suggested-video-channel').textContent = channel;
+  const sec = document.getElementById('video-player-section');
+  sec.style.display = 'block';
+  sec.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+{% endblock %}

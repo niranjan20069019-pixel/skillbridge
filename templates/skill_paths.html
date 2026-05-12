@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Skill Paths — SkillBridge{% endblock %}
+
+{% block content %}
+<div style="display:flex;height:100vh;overflow:hidden;background:var(--bg);">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar avatar-md">{{ current_user.name[0].upper() }}</div>
+        <div style="min-width:0;">
+          <p style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.name }}</p>
+          <p style="font-size:11px;color:var(--text-faint);">{{ current_user.interest }}</p>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('courses') }}" class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
+      <a href="{{ url_for('skill_paths') }}" class="nav-link active"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="{{ url_for('gamification') }}" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="{{ url_for('mentors') }}" class="nav-link"><span>🤝</span><span>Mentors</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main style="flex:1;overflow-y:auto;">
+    <div class="container" style="padding-top:36px;padding-bottom:48px;">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:28px;">
+        <div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:4px;">🗺️ Skill Paths</h1>
+          <p style="font-size:14px;color:var(--text-muted);">Structured career roadmaps — follow step-by-step to land your dream job.</p>
+        </div>
+        <!-- Language switcher -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          {% for code, label in [('en','EN'),('hi','हि'),('kn','ಕ'),('ta','த'),('te','తె')] %}
+          <button onclick="setLang('{{ code }}')" class="btn btn-sm {% if lang==code %}btn-primary{% else %}btn-ghost{% endif %}" style="padding:5px 12px;font-size:12px;">{{ label }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+        <div style="margin-bottom:16px;padding:12px 16px;border-radius:var(--radius);font-size:13px;{% if cat=='success' %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.2);{% else %}background:var(--brand-dim);color:#bfdbfe;border:1px solid var(--brand-border);{% endif %}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+        {% for path in paths %}
+        {% set pct = progress_map.get(path.slug, 0) %}
+        <a href="{{ url_for('skill_path_detail', slug=path.slug) }}" class="card" style="padding:22px;display:block;text-decoration:none;">
+          <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;">
+            <div style="width:48px;height:48px;border-radius:12px;background:{{ path.color }}18;border:1px solid {{ path.color }}33;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">{{ path.icon }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+                <h2 style="font-size:15px;font-weight:700;">{{ path.title }}</h2>
+                {% if path.slug in enrolled_slugs %}
+                <span class="badge badge-green" style="font-size:10px;">Enrolled</span>
+                {% endif %}
+              </div>
+              <p style="font-size:12px;color:var(--text-faint);">{{ path.level }} · {{ path.duration }}</p>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">{{ path.description }}</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:12px;color:var(--text-faint);">{{ path.steps|length }} steps</span>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
+              {% for job in path.jobs[:2] %}
+              <span style="font-size:10px;padding:2px 8px;border-radius:99px;background:{{ path.color }}18;color:{{ path.color }};border:1px solid {{ path.color }}33;">{{ job }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="progress-track" style="flex:1;"><div class="progress-fill" style="width:{{ pct }}%;background:{{ path.color }};"></div></div>
+            <span style="font-size:12px;color:var(--text-faint);flex-shrink:0;">{{ pct }}%</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+function setLang(code) {
+  fetch('/api/set-language',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:code})}).then(()=>location.reload());
+}
+</script>
+{% endblock %}

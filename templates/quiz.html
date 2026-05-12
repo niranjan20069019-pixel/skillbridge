@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Quiz — {{ course.title }} — SkillBridge{% endblock %}
+
+{% block extra_head %}
+<style>
+  .opt-label { display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg-card);cursor:pointer;transition:all var(--transition); }
+  .opt-label:hover { border-color:var(--border-md); }
+  .opt-label.selected { border-color:var(--brand);background:var(--brand-dim); }
+  .opt-circle { width:32px;height:32px;border-radius:50%;border:2px solid var(--border-md);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-faint);flex-shrink:0;transition:all var(--transition); }
+  .opt-label.selected .opt-circle { border-color:var(--brand-light);color:var(--brand-light); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="min-height:100vh;background:var(--bg);padding:32px 16px;">
+<div style="max-width:720px;margin:0 auto;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+    <div>
+      <a href="/learn/{{ course.id }}" style="font-size:13px;color:var(--text-faint);display:inline-block;margin-bottom:8px;">← Back to Course</a>
+      <h1 style="font-size:22px;font-weight:800;margin-bottom:4px;">{{ quiz.title }}</h1>
+      <p style="font-size:13px;color:var(--text-muted);">{{ questions|length }} questions · Pass mark {{ quiz.pass_pct }}%</p>
+    </div>
+    <!-- Timer -->
+    <div class="card-flat" style="padding:14px 20px;text-align:center;min-width:100px;" id="timer-box">
+      <p style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">Time Left</p>
+      <p id="timer" style="font-size:24px;font-weight:800;color:var(--brand-light);">--:--</p>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <form id="quiz-form" method="POST" action="/quiz/{{ course.id }}/submit">
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      {% for q in questions %}
+      <div class="card-flat" style="padding:22px;">
+        <p style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Question {{ loop.index }} of {{ questions|length }}</p>
+        <p style="font-size:15px;font-weight:500;line-height:1.6;margin-bottom:16px;">{{ q.question }}</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          {% for opt, label in [('a',q.option_a),('b',q.option_b),('c',q.option_c),('d',q.option_d)] %}
+          <label class="opt-label" data-name="q_{{ q.id }}" data-opt="{{ opt }}">
+            <input type="radio" name="q_{{ q.id }}" value="{{ opt }}" style="display:none;" onchange="selectOpt(this)"/>
+            <span class="opt-circle">{{ opt|upper }}</span>
+            <span style="font-size:14px;color:var(--text-muted);">{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Progress -->
+    <div style="margin:20px 0 16px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-faint);margin-bottom:6px;">
+        <span id="ans-count">0 / {{ questions|length }} answered</span>
+        <span id="ans-pct">0%</span>
+      </div>
+      <div class="progress-track"><div id="quiz-bar" class="progress-fill" style="width:0;"></div></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:15px;">Submit Quiz</button>
+  </form>
+
+  <!-- Past attempts -->
+  {% if attempts %}
+  <div style="margin-top:36px;">
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:14px;">Past Attempts</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for a in attempts %}
+      <div class="card-flat" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <p style="font-size:14px;font-weight:500;">{{ a.correct_q }}/{{ a.total_q }} correct
+            <span class="badge {% if a.passed %}badge-green{% else %}badge-red{% endif %}" style="margin-left:8px;">{% if a.passed %}PASSED{% else %}FAILED{% endif %}</span>
+          </p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ a.attempted_at.strftime('%b %d, %Y at %H:%M') }}</p>
+        </div>
+        <p style="font-size:22px;font-weight:800;color:{% if a.passed %}#10b981{% else %}#ef4444{% endif %};">{{ a.score }}%</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+<script>
+const TOTAL = {{ questions|length }};
+let timeLeft = {{ quiz.time_limit }};
+const timerEl = document.getElementById('timer');
+const timerBox = document.getElementById('timer-box');
+const iv = setInterval(() => {
+  timeLeft--;
+  const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
+  const s = String(timeLeft%60).padStart(2,'0');
+  timerEl.textContent = `${m}:${s}`;
+  if (timeLeft <= 60) { timerEl.style.color='#ef4444'; timerBox.style.borderColor='rgba(239,68,68,0.3)'; }
+  if (timeLeft <= 0) { clearInterval(iv); document.getElementById('quiz-form').submit(); }
+}, 1000);
+
+function selectOpt(input) {
+  const name = input.name;
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.closest('.opt-label').classList.remove('selected'));
+  input.closest('.opt-label').classList.add('selected');
+  const answered = new Set([...document.querySelectorAll('input[type=radio]:checked')].map(r => r.name)).size;
+  document.getElementById('ans-count').textContent = `${answered} / ${TOTAL} answered`;
+  const pct = Math.round(answered/TOTAL*100);
+  document.getElementById('ans-pct').textContent = pct + '%';
+  document.getElementById('quiz-bar').style.width = pct + '%';
+}
+
+document.getElementById('quiz-form').addEventListener('submit', e => {
+  const answered = new Set([...document.querySelectorAll('input[type=radio]:checked')].map(r => r.name)).size;
+  if (answered < TOTAL && !confirm(`${answered}/${TOTAL} answered. Submit anyway?`)) e.preventDefault();
+});
+</script>
+{% endblock %}

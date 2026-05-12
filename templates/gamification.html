@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Achievements — SkillBridge{% endblock %}
+
+{% block content %}
+<div style="display:flex;height:100vh;overflow:hidden;background:var(--bg);">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('skill_paths') }}" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="{{ url_for('gamification') }}" class="nav-link active"><span>🏆</span><span>Achievements</span></a>
+      <a href="{{ url_for('mentors') }}" class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="{{ url_for('analytics') }}" class="nav-link"><span>📊</span><span>Analytics</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main style="flex:1;overflow-y:auto;">
+    <div class="container" style="padding-top:36px;padding-bottom:48px;">
+
+      <div style="margin-bottom:28px;">
+        <h1 style="font-size:24px;font-weight:800;margin-bottom:4px;">🏆 Achievements</h1>
+        <p style="font-size:14px;color:var(--text-muted);">Earn XP, maintain streaks, and unlock badges.</p>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
+        {% for val, label, color in [
+          (profile.xp, "Total XP", "var(--brand-light)"),
+          (profile.streak|string + " 🔥", "Day Streak", "#f59e0b"),
+          ("#" + my_rank|string if my_rank else "—", "Leaderboard Rank", "#8b5cf6"),
+        ] %}
+        <div class="card-flat" style="padding:20px;text-align:center;">
+          <p style="font-size:28px;font-weight:800;color:{{ color }};">{{ val }}</p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:4px;">{{ label }}</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+        <!-- Badges -->
+        <div>
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Badges</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            {% for badge in all_badges %}
+            {% set earned = badge.id in earned_ids %}
+            <div class="card-flat" style="padding:14px;display:flex;align-items:flex-start;gap:10px;opacity:{% if earned %}1{% else %}0.4{% endif %};border-color:{% if earned %}var(--brand-border){% else %}var(--border){% endif %};">
+              <span style="font-size:24px;flex-shrink:0;">{{ badge.icon }}</span>
+              <div style="min-width:0;">
+                <p style="font-size:13px;font-weight:600;margin-bottom:2px;">{{ badge.name }}</p>
+                <p style="font-size:11px;color:var(--text-faint);">{{ badge.description }}</p>
+                <p style="font-size:11px;color:var(--brand-light);margin-top:4px;">+{{ badge.xp_reward }} XP</p>
+              </div>
+              {% if earned %}<span style="margin-left:auto;color:#10b981;font-size:14px;flex-shrink:0;">✓</span>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div>
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Leaderboard</h2>
+          <div class="card-flat" style="overflow:hidden;">
+            {% for profile_row, user in leaderboard %}
+            {% set i = loop.index %}
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);{% if user.id == current_user.id %}background:var(--brand-dim);{% endif %}">
+              <span style="width:24px;text-align:center;font-size:14px;font-weight:700;flex-shrink:0;color:{% if i==1 %}#fbbf24{% elif i==2 %}#94a3b8{% elif i==3 %}#d97706{% else %}var(--text-faint){% endif %};">
+                {% if i==1 %}🥇{% elif i==2 %}🥈{% elif i==3 %}🥉{% else %}{{ i }}{% endif %}
+              </span>
+              <div class="avatar avatar-sm">{{ user.name[0].upper() }}</div>
+              <div style="flex:1;min-width:0;">
+                <p style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  {{ user.name }}{% if user.id == current_user.id %} <span style="color:var(--brand-light);font-size:11px;">(you)</span>{% endif %}
+                </p>
+                <p style="font-size:11px;color:var(--text-faint);">{{ profile_row.streak }}🔥 streak</p>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:var(--brand-light);flex-shrink:0;">{{ profile_row.xp }} XP</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

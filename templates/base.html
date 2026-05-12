@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="{{ lang | default('en') }}" id="html-root">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#0a0f1e"/>
+  <title>{% block title %}SkillBridge{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+
+  <script>
+    (function(){
+      const dark = localStorage.getItem('sb_dark') !== '0';
+      if (!dark) document.documentElement.classList.add('light-mode');
+    })();
+  </script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-wrap" role="alert" aria-live="polite">
+      {% for category, message in messages %}
+      <div class="flash">
+        <span aria-hidden="true">
+          {% if category == 'success' %}✅{% elif category == 'danger' %}❌{% elif category == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+        </span>
+        <p style="font-size:14px;flex:1;">{{ message }}</p>
+        <button class="flash-close" onclick="this.closest('.flash').remove()" aria-label="Dismiss">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    <script>setTimeout(()=>{document.querySelectorAll('.flash').forEach(f=>{f.style.opacity='0';f.style.transition='opacity 0.3s';setTimeout(()=>f.remove(),300)});},4500);</script>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Accessibility toolbar -->
+  <div class="a11y-bar" role="toolbar" aria-label="Accessibility controls">
+    <button class="a11y-btn" onclick="toggleDark()" id="dark-toggle" aria-label="Toggle dark/light mode" title="Toggle theme">
+      <span id="dark-icon">🌙</span>
+    </button>
+  </div>
+
+  <main id="main-content" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    function toggleDark() {
+      const isDark = localStorage.getItem('sb_dark') !== '0';
+      localStorage.setItem('sb_dark', isDark ? '0' : '1');
+      document.documentElement.classList.toggle('light-mode', isDark);
+      document.getElementById('dark-icon').textContent = isDark ? '☀️' : '🌙';
+    }
+    (function(){
+      const isDark = localStorage.getItem('sb_dark') !== '0';
+      document.getElementById('dark-icon').textContent = isDark ? '🌙' : '☀️';
+    })();
+
+    // Scroll reveal
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+    });
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

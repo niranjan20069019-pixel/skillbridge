@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Mentors — SkillBridge{% endblock %}
+
+{% block content %}
+<div style="display:flex;height:100vh;overflow:hidden;background:var(--bg);">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('skill_paths') }}" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="{{ url_for('gamification') }}" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="{{ url_for('mentors') }}" class="nav-link active"><span>🤝</span><span>Mentors</span></a>
+      <a href="{{ url_for('analytics') }}" class="nav-link"><span>📊</span><span>Analytics</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main style="flex:1;overflow-y:auto;">
+    <div class="container" style="padding-top:36px;padding-bottom:48px;">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+        <div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:4px;">🤝 Mentors</h1>
+          <p style="font-size:14px;color:var(--text-muted);">Get guidance from experienced mentors in your field.</p>
+        </div>
+        <a href="{{ url_for('mentor_apply') }}" class="btn btn-primary btn-sm">Become a Mentor</a>
+      </div>
+
+      <!-- Skill filter -->
+      <form method="GET" style="display:flex;gap:8px;margin-bottom:24px;max-width:400px;">
+        <input name="skill" value="{{ skill_filter }}" placeholder="Filter by skill (e.g. Python, SEO)…" class="input" style="font-size:13px;"/>
+        <button type="submit" class="btn btn-primary btn-sm" style="flex-shrink:0;">Search</button>
+      </form>
+
+      <!-- Matched banner -->
+      {% if matched and not skill_filter %}
+      <div class="card-flat" style="padding:14px 18px;margin-bottom:20px;border-color:var(--brand-border);background:var(--brand-dim);">
+        <p style="font-size:12px;font-weight:600;color:var(--brand-light);margin-bottom:8px;">✨ Matched to your interest: {{ current_user.interest }}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          {% for m in matched[:3] %}
+          <span class="badge badge-brand">{{ m.user.name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Mentor cards -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for mentor in mentors %}
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+            <div class="avatar avatar-lg">{{ mentor.user.name[0].upper() }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+                <h3 style="font-size:15px;font-weight:700;">{{ mentor.user.name }}</h3>
+                <span class="badge badge-amber">⭐ {{ mentor.avg_rating }}</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">{{ mentor.experience }}</p>
+              <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;line-height:1.6;">{{ mentor.bio[:120] }}{% if mentor.bio|length > 120 %}…{% endif %}</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                {% for skill in mentor.skills.split(',') %}
+                <span class="badge badge-blue">{{ skill.strip() }}</span>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+              <details style="position:relative;">
+                <summary class="btn btn-ghost btn-sm" style="list-style:none;cursor:pointer;">⭐ Rate</summary>
+                <form method="POST" action="{{ url_for('rate_mentor', mentor_id=mentor.id) }}"
+                      style="position:absolute;right:0;top:36px;z-index:20;background:var(--bg-raised);border:1px solid var(--border-md);border-radius:var(--radius);padding:16px;width:220px;box-shadow:var(--shadow-lg);">
+                  <select name="rating" class="input" style="font-size:12px;margin-bottom:8px;">
+                    {% for i in range(1,6) %}<option value="{{ i }}">{{ i }} ⭐</option>{% endfor %}
+                  </select>
+                  <textarea name="comment" placeholder="Comment (optional)" rows="2" class="input" style="font-size:12px;margin-bottom:8px;resize:none;"></textarea>
+                  <button type="submit" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">Submit</button>
+                </form>
+              </details>
+              <details style="position:relative;">
+                <summary class="btn btn-primary btn-sm" style="list-style:none;cursor:pointer;">💬 Ask Doubt</summary>
+                <form method="POST" action="{{ url_for('submit_doubt', mentor_id=mentor.id) }}"
+                      style="position:absolute;right:0;top:36px;z-index:20;background:var(--bg-raised);border:1px solid var(--border-md);border-radius:var(--radius);padding:16px;width:260px;box-shadow:var(--shadow-lg);">
+                  <input name="subject" placeholder="Subject" class="input" style="font-size:12px;margin-bottom:8px;" required/>
+                  <textarea name="message" placeholder="Your question…" rows="3" class="input" style="font-size:12px;margin-bottom:8px;resize:none;" required></textarea>
+                  <button type="submit" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">Send</button>
+                </form>
+              </details>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:64px 0;">
+          <p style="font-size:36px;margin-bottom:12px;">🤝</p>
+          <p style="font-size:14px;color:var(--text-muted);">No approved mentors yet. Be the first!</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

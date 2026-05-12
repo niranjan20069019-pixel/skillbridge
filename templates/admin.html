@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — SkillBridge{% endblock %}
+{% block content %}
+<div class="flex h-screen overflow-hidden" style="background:#080e1a;">
+  <!-- Sidebar -->
+  <aside class="w-56 shrink-0 flex flex-col border-r z-30" style="background:#0f172a;border-color:rgba(255,255,255,0.06);">
+    <div class="h-16 flex items-center gap-3 px-5 border-b" style="border-color:rgba(255,255,255,0.06);">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center gradient-brand"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+      <span class="font-display font-bold text-sm">Admin</span>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-0.5 text-sm font-body">
+      <a href="#analytics" class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">📊 Analytics</a>
+      <a href="#users"     class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">👥 Users</a>
+      <a href="#courses"   class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">📚 Courses</a>
+      <a href="#mentors"   class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">🤝 Mentors</a>
+      <a href="#doubts"    class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">💬 Doubts</a>
+      <a href="#quizzes"   class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">🧠 Quizzes</a>
+      <a href="#notes"     class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">📄 Notes</a>
+    </nav>
+    <div class="p-3 border-t" style="border-color:rgba(255,255,255,0.06);">
+      <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body" style="color:rgba(255,255,255,0.4);">← Dashboard</a>
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto">
+    <div class="max-w-5xl mx-auto px-6 py-8">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+        <div class="mb-4 px-4 py-3 rounded-xl text-sm font-body {% if cat=='success' %}bg-green-900/40 text-green-300 border border-green-700/40{% else %}bg-blue-900/40 text-blue-300 border border-blue-700/40{% endif %}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <!-- ── Analytics ── -->
+      <section id="analytics" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">📊 Analytics</h2>
+        <div class="grid grid-cols-3 md:grid-cols-5 gap-3">
+          {% for label, val, color in [
+            ('Users', stats.users, '#3b82f6'),
+            ('Courses', stats.courses, '#22c55e'),
+            ('Enrollments', stats.enrollments, '#a855f7'),
+            ('Quizzes', stats.quizzes, '#f59e0b'),
+            ('Certificates', stats.certificates, '#ec4899'),
+          ] %}
+          <div class="rounded-2xl border p-4 text-center" style="background:#0f172a;border-color:{{ color }}33;">
+            <p class="text-2xl font-display font-bold" style="color:{{ color }};">{{ val }}</p>
+            <p class="text-xs font-body mt-1" style="color:rgba(255,255,255,0.4);">{{ label }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-3">
+          {% for label, val, color in [
+            ('Approved Mentors', stats.mentors, '#22c55e'),
+            ('Pending Mentors', stats.pending_mentors, '#f59e0b'),
+            ('Doubt Requests', stats.doubts, '#3b82f6'),
+          ] %}
+          <div class="rounded-2xl border p-4 text-center" style="background:#0f172a;border-color:{{ color }}33;">
+            <p class="text-2xl font-display font-bold" style="color:{{ color }};">{{ val }}</p>
+            <p class="text-xs font-body mt-1" style="color:rgba(255,255,255,0.4);">{{ label }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        {% if top_courses %}
+        <div class="mt-4 rounded-2xl border p-4" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <p class="text-xs font-body font-semibold mb-3" style="color:rgba(255,255,255,0.4);">TOP COURSES BY ENROLLMENT</p>
+          {% for course, cnt in top_courses %}
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-sm font-body text-white flex-1 truncate">{{ course.title }}</span>
+            <div class="w-32 h-1.5 rounded-full" style="background:rgba(255,255,255,0.07);">
+              <div class="h-1.5 rounded-full" style="width:{{ [cnt * 10, 100]|min }}%; background:#22c55e;"></div>
+            </div>
+            <span class="text-xs font-body w-8 text-right" style="color:rgba(255,255,255,0.4);">{{ cnt }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- ── Users ── -->
+      <section id="users" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">👥 Users</h2>
+        <div class="rounded-2xl border overflow-hidden" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <table class="w-full text-sm font-body">
+            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Name</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Email</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Interest</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Joined</th>
+              <th class="px-4 py-3"></th>
+            </tr></thead>
+            <tbody>
+              {% for u in all_users[:20] %}
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                <td class="px-4 py-3 text-white">{{ u.name }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ u.email }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ u.interest }}</td>
+                <td class="px-4 py-3 text-xs" style="color:rgba(255,255,255,0.35);">{{ u.joined_at.strftime('%d %b %Y') }}</td>
+                <td class="px-4 py-3">
+                  {% if u.email not in ['admin@skillbridge.com'] %}
+                  <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" onsubmit="return confirm('Delete user?')">
+                    <button type="submit" class="text-xs px-2 py-1 rounded-lg" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Courses ── -->
+      <section id="courses" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">📚 Courses</h2>
+        <!-- Add course form -->
+        <details class="mb-4 rounded-2xl border p-4" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <summary class="cursor-pointer text-sm font-body font-semibold text-white">+ Add New Course</summary>
+          <form method="POST" action="{{ url_for('admin_add_course') }}" class="mt-4 grid grid-cols-2 gap-3">
+            <input name="title" placeholder="Title" class="input text-sm" required>
+            <input name="category" placeholder="Category" class="input text-sm" required>
+            <input name="instructor" placeholder="Instructor" class="input text-sm">
+            <input name="youtube_id" placeholder="YouTube ID" class="input text-sm">
+            <select name="level" class="input text-sm">
+              <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+            </select>
+            <textarea name="description" placeholder="Description" class="input text-sm col-span-2" rows="2" required></textarea>
+            <button type="submit" class="btn-primary text-sm col-span-2 justify-center">Add Course</button>
+          </form>
+        </details>
+        <div class="rounded-2xl border overflow-hidden" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <table class="w-full text-sm font-body">
+            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Title</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Category</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Level</th>
+              <th class="px-4 py-3"></th>
+            </tr></thead>
+            <tbody>
+              {% for c in all_courses %}
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                <td class="px-4 py-3 text-white">{{ c.title }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ c.category }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ c.level }}</td>
+                <td class="px-4 py-3">
+                  <form method="POST" action="{{ url_for('admin_delete_course', course_id=c.id) }}" onsubmit="return confirm('Delete course?')">
+                    <button type="submit" class="text-xs px-2 py-1 rounded-lg" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Mentor Approvals ── -->
+      <section id="mentors" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">🤝 Mentor Approvals</h2>
+        {% if pending_mentors %}
+        <div class="space-y-3">
+          {% for m in pending_mentors %}
+          <div class="rounded-2xl border p-4 flex items-start gap-4" style="background:#0f172a;border-color:#f59e0b33;">
+            <div class="flex-1">
+              <p class="font-display font-semibold text-white">{{ m.user.name }}</p>
+              <p class="text-xs font-body mt-0.5" style="color:rgba(255,255,255,0.4);">{{ m.skills }} · {{ m.experience }}</p>
+              <p class="text-sm font-body mt-1" style="color:rgba(255,255,255,0.6);">{{ m.bio[:100] }}…</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <form method="POST" action="{{ url_for('admin_approve_mentor', mentor_id=m.id) }}">
+                <button type="submit" class="btn-primary text-xs">Approve</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_reject_mentor', mentor_id=m.id) }}">
+                <button type="submit" class="btn-ghost text-xs">Reject</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm font-body" style="color:rgba(255,255,255,0.3);">No pending mentor applications.</p>
+        {% endif %}
+      </section>
+
+      <!-- ── Doubt Requests ── -->
+      <section id="doubts" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">💬 Doubt Requests</h2>
+        <div class="space-y-3">
+          {% for d in recent_doubts %}
+          <div class="rounded-2xl border p-4" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+            <div class="flex items-start justify-between gap-3 flex-wrap mb-2">
+              <div>
+                <p class="font-display font-semibold text-sm text-white">{{ d.subject }}</p>
+                <p class="text-xs font-body" style="color:rgba(255,255,255,0.4);">From: {{ d.user.name }} · {{ d.created_at.strftime('%d %b') }}</p>
+              </div>
+              <span class="text-xs px-2 py-0.5 rounded-full font-body
+                {% if d.status == 'answered' %}bg-green-900/40 text-green-300{% else %}bg-amber-900/40 text-amber-300{% endif %}">
+                {{ d.status }}
+              </span>
+            </div>
+            <p class="text-sm font-body mb-3" style="color:rgba(255,255,255,0.6);">{{ d.message }}</p>
+            {% if d.status == 'pending' %}
+            <form method="POST" action="{{ url_for('admin_reply_doubt', doubt_id=d.id) }}" class="flex gap-2">
+              <input name="reply" placeholder="Reply to this doubt…" class="input text-sm flex-1" required>
+              <button type="submit" class="btn-primary text-sm">Reply</button>
+            </form>
+            {% else %}
+            <p class="text-xs font-body px-3 py-2 rounded-xl" style="background:rgba(34,197,94,0.08);color:#4ade80;">✓ {{ d.reply }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% if not recent_doubts %}
+          <p class="text-sm font-body" style="color:rgba(255,255,255,0.3);">No doubt requests yet.</p>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- ── Quiz Management ── -->
+      <section id="quizzes" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">🧠 Quiz Management</h2>
+        {% for quiz in all_quizzes %}
+        <details class="mb-4 rounded-2xl border" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <summary class="cursor-pointer px-4 py-3 text-sm font-body font-semibold text-white flex items-center justify-between">
+            <span>{{ quiz.title }} <span class="text-xs font-normal ml-2" style="color:rgba(255,255,255,0.4);">({{ quiz.questions.count() }} questions)</span></span>
+            <span class="text-xs" style="color:rgba(255,255,255,0.3);">▼</span>
+          </summary>
+          <div class="px-4 pb-4">
+            <!-- Existing questions -->
+            {% for q in quiz.questions %}
+            <div class="flex items-start gap-3 py-2 border-t" style="border-color:rgba(255,255,255,0.05);">
+              <p class="text-sm font-body text-white flex-1">{{ loop.index }}. {{ q.question }}</p>
+              <form method="POST" action="{{ url_for('admin_delete_question', q_id=q.id) }}" onsubmit="return confirm('Delete question?')">
+                <button type="submit" class="text-xs px-2 py-1 rounded-lg shrink-0" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
+              </form>
+            </div>
+            {% endfor %}
+            <!-- Add question form -->
+            <form method="POST" action="{{ url_for('admin_add_question', quiz_id=quiz.id) }}" class="mt-4 grid grid-cols-2 gap-2">
+              <textarea name="question" placeholder="Question text" class="input text-sm col-span-2" rows="2" required></textarea>
+              <input name="option_a" placeholder="Option A" class="input text-sm" required>
+              <input name="option_b" placeholder="Option B" class="input text-sm" required>
+              <input name="option_c" placeholder="Option C" class="input text-sm" required>
+              <input name="option_d" placeholder="Option D" class="input text-sm" required>
+              <select name="correct" class="input text-sm" required>
+                <option value="">Correct answer…</option>
+                <option value="a">A</option><option value="b">B</option>
+                <option value="c">C</option><option value="d">D</option>
+              </select>
+              <input name="explanation" placeholder="Explanation (optional)" class="input text-sm">
+              <button type="submit" class="btn-primary text-sm col-span-2 justify-center">+ Add Question</button>
+            </form>
+          </div>
+        </details>
+        {% endfor %}
+        {% if not all_quizzes %}
+        <p class="text-sm font-body" style="color:rgba(255,255,255,0.3);">No quizzes found. Add courses first.</p>
+        {% endif %}
+      </section>
+
+      <!-- ── Notes Upload ── -->
+      <section id="notes" class="mb-10">
+        <h2 class="font-display font-bold text-xl text-white mb-4">📄 Notes Upload</h2>
+        <details class="mb-4 rounded-2xl border p-4" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <summary class="cursor-pointer text-sm font-body font-semibold text-white">+ Upload New Notes</summary>
+          <form method="POST" action="{{ url_for('admin_upload_notes') }}" enctype="multipart/form-data" class="mt-4 grid grid-cols-2 gap-3">
+            <select name="course_id" class="input text-sm" required>
+              <option value="">Select Course…</option>
+              {% for c in all_courses %}
+              <option value="{{ c.id }}">{{ c.title }}</option>
+              {% endfor %}
+            </select>
+            <input name="title" placeholder="Notes title" class="input text-sm" required>
+            <select name="language" class="input text-sm">
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ta">Tamil</option>
+              <option value="te">Telugu</option>
+              <option value="kn">Kannada</option>
+            </select>
+            <input type="file" name="file" accept=".pdf,.docx,.txt,.pptx" class="input text-sm" required>
+            <button type="submit" class="btn-primary text-sm col-span-2 justify-center">Upload Notes</button>
+          </form>
+        </details>
+        {% if all_notes %}
+        <div class="rounded-2xl border overflow-hidden" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
+          <table class="w-full text-sm font-body">
+            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Title</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Course</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Lang</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold" style="color:rgba(255,255,255,0.4);">Downloads</th>
+              <th class="px-4 py-3"></th>
+            </tr></thead>
+            <tbody>
+              {% for n in all_notes %}
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                <td class="px-4 py-3 text-white">{{ n.title }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ n.course.title }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ n.language }}</td>
+                <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ n.downloads }}</td>
+                <td class="px-4 py-3">
+                  <form method="POST" action="{{ url_for('admin_delete_note', note_id=n.id) }}" onsubmit="return confirm('Delete note?')">
+                    <button type="submit" class="text-xs px-2 py-1 rounded-lg" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-sm font-body" style="color:rgba(255,255,255,0.3);">No notes uploaded yet.</p>
+        {% endif %}
+      </section>
+
+    </div>
+  </main>
+</div>
+{% endblock %}

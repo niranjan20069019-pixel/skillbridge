@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% block title %}{{ path.title }} Path — SkillBridge{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden" style="background:#080e1a;">
+
+  <!-- Sidebar -->
+  <aside class="w-64 shrink-0 flex flex-col border-r z-30" style="background:#0f172a; border-color:rgba(255,255,255,0.06);">
+    <div class="h-16 flex items-center gap-3 px-5 border-b shrink-0" style="border-color:rgba(255,255,255,0.06);">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center gradient-brand shrink-0 shadow-glow-sm">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </div>
+      <span class="font-display font-bold text-base tracking-tight">Skill<span class="gradient-text">Bridge</span></span>
+    </div>
+    <div class="p-5 border-b shrink-0" style="border-color:rgba(255,255,255,0.06);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-white text-sm shrink-0 gradient-brand">{{ current_user.name[0].upper() }}</div>
+        <div class="min-w-0">
+          <p class="font-display font-semibold text-sm text-white truncate">{{ current_user.name }}</p>
+          <p class="text-xs font-body truncate" style="color:rgba(255,255,255,0.35);">{{ current_user.interest }}</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <a href="{{ url_for('dashboard') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('courses') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🔍</span><span>Browse Courses</span></a>
+      <a href="{{ url_for('skill_paths') }}" class="nav-link nav-active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🗺️</span><span class="font-medium">{{ t('skill_paths') }}</span></a>
+    </nav>
+    <div class="p-3 border-t shrink-0" style="border-color:rgba(255,255,255,0.06);">
+      <a href="{{ url_for('logout') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body" style="color:rgba(255,255,255,0.4);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 overflow-y-auto">
+    <div class="max-w-3xl mx-auto px-6 py-10">
+
+      <!-- Top bar: back + language switcher -->
+      <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <a href="{{ url_for('skill_paths') }}" class="text-sm font-body" style="color:rgba(255,255,255,0.4);">{{ t('back') }}</a>
+        <!-- Language switcher -->
+        <div class="flex items-center gap-1.5">
+          {% for code, label in [('en','EN'),('hi','हि'),('kn','ಕ'),('ta','த'),('te','తె')] %}
+          <button onclick="setLang('{{ code }}')"
+                  class="px-2.5 py-1 rounded-lg text-xs font-body font-medium transition-all"
+                  style="{% if lang == code %}background:{{ path.color }};color:#fff;{% else %}background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);{% endif %}">
+            {{ label }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+        <div class="mb-4 px-4 py-3 rounded-xl text-sm font-body {% if cat == 'success' %}bg-green-900/40 text-green-300 border border-green-700/40{% else %}bg-blue-900/40 text-blue-300 border border-blue-700/40{% endif %}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <!-- Hero -->
+      <div class="rounded-2xl border p-6 mb-4" style="background:#0f172a; border-color:{{ path.color }}44;">
+        <div class="flex items-start gap-5">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background:{{ path.color }}22; border:1px solid {{ path.color }}44;">{{ path.icon }}</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-3 flex-wrap mb-1">
+              <h1 class="font-display font-bold text-2xl text-white">{{ path.title }}</h1>
+              {% if enrolled %}<span class="text-xs px-2 py-0.5 rounded-full font-body font-medium" style="background:#22c55e22;color:#4ade80;border:1px solid #22c55e44;">✓ {{ t('enrolled') }}</span>{% endif %}
+            </div>
+            <p class="text-sm font-body mb-2" style="color:rgba(255,255,255,0.5);">{{ path.level }} · {{ path.duration }} · {{ path.steps|length }} steps</p>
+            <p class="text-sm font-body" style="color:rgba(255,255,255,0.65);">{{ path.description }}</p>
+          </div>
+        </div>
+        <!-- Career outcomes -->
+        <div class="mt-4 pt-4 border-t flex items-center gap-2 flex-wrap" style="border-color:rgba(255,255,255,0.07);">
+          <span class="text-xs font-body" style="color:rgba(255,255,255,0.35);">{{ t('career_outcomes') }}:</span>
+          {% for job in path.jobs %}<span class="text-xs px-3 py-1 rounded-full font-body" style="background:{{ path.color }}18;color:{{ path.color }};border:1px solid {{ path.color }}33;">{{ job }}</span>{% endfor %}
+        </div>
+        <!-- Progress / Enroll -->
+        {% if enrolled %}
+        <div class="mt-4">
+          <div class="flex justify-between text-xs font-body mb-1.5" style="color:rgba(255,255,255,0.4);">
+            <span>{{ t('progress') }}</span><span id="pct-label">{{ progress_pct }}%</span>
+          </div>
+          <div class="h-2 rounded-full" style="background:rgba(255,255,255,0.07);">
+            <div id="progress-bar" class="h-2 rounded-full transition-all duration-500" style="width:{{ progress_pct }}%; background:{{ path.color }};"></div>
+          </div>
+          <p class="text-xs font-body mt-1" style="color:rgba(255,255,255,0.3);">{{ completed_steps|length }} / {{ path.steps|length }} {{ t('steps_completed') }}</p>
+        </div>
+        {% else %}
+        <form method="POST" action="{{ url_for('enroll_skill_path', slug=path.slug) }}" class="mt-5">
+          <button type="submit" class="px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-white hover:opacity-90 transition-all" style="background:{{ path.color }};">🚀 {{ t('start_path') }}</button>
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- Next-step recommendation widget -->
+      {% if enrolled %}
+      <div id="next-step-widget" class="rounded-2xl border px-4 py-3 mb-4 flex items-center gap-3" style="background:#0f172a; border-color:rgba(255,255,255,0.07);">
+        <span class="text-lg shrink-0">🎯</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-body font-semibold mb-0.5" style="color:rgba(255,255,255,0.4);">{{ t('next_rec') }}</p>
+          <p id="next-step-text" class="text-sm font-body text-white">…</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Translated Notes panel -->
+      {% if path_notes %}
+      <details class="rounded-2xl border mb-6" style="background:#0f172a; border-color:rgba(255,255,255,0.07);">
+        <summary class="px-4 py-3 cursor-pointer text-sm font-body font-semibold flex items-center gap-2" style="color:rgba(255,255,255,0.6);">
+          📝 {{ t('notes') }}
+          <span class="text-xs font-body ml-auto" style="color:rgba(255,255,255,0.3);">{{ t('subtitles') }}: <span class="font-medium" style="color:{{ path.color }};">{{ subtitle_lang|upper }}</span></span>
+        </summary>
+        <div class="px-4 pb-4">
+          <div class="border-t pt-3 mb-3" style="border-color:rgba(255,255,255,0.06);">
+            <p class="text-xs font-body" style="color:rgba(255,255,255,0.35);">💬 {{ t('subtitle_hint') }}</p>
+          </div>
+          <pre class="text-xs font-body whitespace-pre-wrap" style="color:rgba(255,255,255,0.65); line-height:1.7;">{{ path_notes }}</pre>
+        </div>
+      </details>
+      {% endif %}
+
+      <!-- Roadmap -->
+      <h2 class="font-display font-bold text-lg text-white mb-5">{{ t('learning_roadmap') }}</h2>
+
+      <!-- Steps timeline -->
+      <div class="relative">
+        <div class="absolute left-6 top-0 bottom-0 w-px" style="background:rgba(255,255,255,0.07);"></div>
+        <div class="space-y-4" id="steps-container">
+          {% for step in path.steps %}
+          {% set si = loop.index0 %}
+          {% set done = si in completed_steps %}
+          {% set locked = enrolled and not done and si > 0 and (si - 1) not in completed_steps %}
+
+          <div class="relative flex gap-5" id="step-{{ si }}">
+            <!-- Circle -->
+            <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 z-10 font-display font-bold text-sm border-2 transition-all"
+                 style="background:#0f172a;
+                        border-color:{% if done %}#22c55e{% elif enrolled and not locked %}{{ path.color }}{% else %}rgba(255,255,255,0.12){% endif %};
+                        color:{% if done %}#22c55e{% elif enrolled and not locked %}{{ path.color }}{% else %}rgba(255,255,255,0.3){% endif %};">
+              {% if done %}✓{% else %}{{ loop.index }}{% endif %}
+            </div>
+
+            <!-- Card -->
+            <div class="flex-1 rounded-2xl border transition-all"
+                 style="background:#0f172a; border-color:{% if done %}#22c55e33{% elif enrolled and not locked %}{{ path.color }}22{% else %}rgba(255,255,255,0.07){% endif %};">
+
+              <!-- Header -->
+              <button class="w-full text-left p-4 flex items-start justify-between gap-3"
+                      onclick="toggleStep({{ si }})" {% if locked %}disabled{% endif %}>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-display font-semibold text-sm text-white">{{ step.title }}</h3>
+                    {% if step.milestone %}<span class="text-xs px-2 py-0.5 rounded-full font-body font-medium" style="background:#f59e0b22;color:#fbbf24;border:1px solid #f59e0b44;">🏆 {{ t('milestone') }}</span>{% endif %}
+                    {% if done %}<span class="text-xs px-2 py-0.5 rounded-full font-body" style="background:#22c55e22;color:#4ade80;">✓ {{ t('step_done') }}</span>{% endif %}
+                    {% if locked %}<span class="text-xs font-body" style="color:rgba(255,255,255,0.25);">🔒 {{ t('locked') }}</span>{% endif %}
+                  </div>
+                  <p class="text-xs font-body mt-1" style="color:rgba(255,255,255,0.4);">{{ step.desc }}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-xs font-body px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.35);">{{ step.duration }}</span>
+                  {% if not locked %}<svg class="w-4 h-4 transition-transform" id="chevron-{{ si }}" style="color:rgba(255,255,255,0.3);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>{% endif %}
+                </div>
+              </button>
+
+              <!-- Body -->
+              {% if not locked %}
+              <div id="body-{{ si }}" class="hidden px-4 pb-4">
+                <div class="border-t pt-4" style="border-color:rgba(255,255,255,0.06);">
+
+                  <!-- Ordered lessons -->
+                  <p class="text-xs font-body font-semibold mb-2" style="color:rgba(255,255,255,0.5);">📖 {{ t('lessons') }}</p>
+                  <ol class="space-y-1.5 mb-4">
+                    {% for lesson in step.lessons %}
+                    <li class="flex items-center gap-2 text-xs font-body" style="color:rgba(255,255,255,0.65);">
+                      <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs font-display font-bold" style="background:{{ path.color }}22; color:{{ path.color }};">{{ loop.index }}</span>
+                      {{ lesson }}
+                    </li>
+                    {% endfor %}
+                  </ol>
+
+                  {% if step.course %}
+                  <div class="flex items-center justify-between mb-4 px-3 py-2 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                    <span class="text-xs font-body" style="color:rgba(255,255,255,0.4);">📚 {{ step.course }}</span>
+                    <a href="{{ url_for('courses') }}?q={{ step.course|urlencode }}" class="text-xs font-body font-medium" style="color:{{ path.color }};">{{ t('view_course') }}</a>
+                  </div>
+                  {% endif %}
+
+                  <!-- Mini quiz -->
+                  {% if step.quiz %}
+                  <div class="rounded-xl border p-4 mb-4" style="background:#080e1a; border-color:rgba(255,255,255,0.07);">
+                    <p class="text-xs font-body font-semibold mb-3" style="color:rgba(255,255,255,0.5);">🧠 {{ t('quick_quiz') }}</p>
+                    {% for qi, q in enumerate(step.quiz) %}
+                    <div class="mb-4" id="qq-{{ si }}-{{ qi }}">
+                      <p class="text-xs font-body text-white mb-2">{{ qi + 1 }}. {{ q.q }}</p>
+                      <div class="space-y-1.5">
+                        {% for oi, opt in enumerate(q.options) %}
+                        <button onclick="answerQuiz({{ si }}, {{ qi }}, {{ oi }}, {{ q.answer }}, '{{ path.color }}')"
+                                id="opt-{{ si }}-{{ qi }}-{{ oi }}"
+                                class="w-full text-left text-xs font-body px-3 py-2 rounded-lg transition-all"
+                                style="background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.07);">
+                          {{ opt }}
+                        </button>
+                        {% endfor %}
+                      </div>
+                      <p class="text-xs font-body mt-1.5 hidden" id="fb-{{ si }}-{{ qi }}"></p>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+
+                  <!-- Complete button -->
+                  {% if enrolled and not done %}
+                  <button onclick="completeStep({{ si }}, '{{ path.slug }}', '{{ path.color }}')"
+                          id="btn-{{ si }}"
+                          class="w-full py-2.5 rounded-xl font-display font-semibold text-sm text-white transition-all hover:opacity-90"
+                          style="background:{{ path.color }};">
+                    ✓ {{ t('mark_complete') }}
+                  </button>
+                  {% elif done %}
+                  <div class="text-center text-sm font-body py-2" style="color:#4ade80;">✓ {{ t('step_done') }}</div>
+                  {% endif %}
+
+                </div>
+              </div>
+              {% endif %}
+
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const SLUG = "{{ path.slug }}";
+const CORRECT_MSG = {{ t('correct')|tojson }};
+const INCORRECT_MSG = {{ t('incorrect')|tojson }};
+
+function toggleStep(si) {
+  const body = document.getElementById('body-' + si);
+  const chevron = document.getElementById('chevron-' + si);
+  if (!body) return;
+  const open = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function answerQuiz(si, qi, chosen, correct, color) {
+  const opts = document.querySelectorAll('[id^="opt-' + si + '-' + qi + '-"]');
+  opts.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === correct) { btn.style.background='rgba(34,197,94,0.15)'; btn.style.borderColor='#22c55e66'; btn.style.color='#4ade80'; }
+    else if (i === chosen) { btn.style.background='rgba(239,68,68,0.15)'; btn.style.borderColor='#ef444466'; btn.style.color='#f87171'; }
+  });
+  const fb = document.getElementById('fb-' + si + '-' + qi);
+  if (fb) {
+    fb.classList.remove('hidden');
+    if (chosen === correct) { fb.textContent = CORRECT_MSG; fb.style.color = '#4ade80'; }
+    else { fb.textContent = INCORRECT_MSG; fb.style.color = '#f87171'; }
+  }
+}
+
+function completeStep(si, slug, color) {
+  fetch('/api/skill-paths/' + slug + '/complete-step', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({step_index: si})
+  }).then(r => r.json()).then(data => {
+    const bar = document.getElementById('progress-bar');
+    const lbl = document.getElementById('pct-label');
+    if (bar) bar.style.width = data.progress_pct + '%';
+    if (lbl) lbl.textContent = data.progress_pct + '%';
+    const circle = document.querySelector('#step-' + si + ' .rounded-full');
+    if (circle) { circle.textContent = '✓'; circle.style.borderColor = '#22c55e'; circle.style.color = '#22c55e'; }
+    const btn = document.getElementById('btn-' + si);
+    if (btn) btn.outerHTML = '<div class="text-center text-sm font-body py-2" style="color:#4ade80;">✓ ' + CORRECT_MSG.replace('✓ ','') + '</div>';
+    loadNextStep();
+  });
+}
+
+function setLang(code) {
+  fetch('/api/set-language', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({language: code})
+  }).then(() => location.reload());
+}
+
+function loadNextStep() {
+  fetch('/api/skill-paths/' + SLUG + '/next-step')
+    .then(r => r.json()).then(data => {
+      const el = document.getElementById('next-step-text');
+      if (el) el.textContent = data.message || '';
+    });
+}
+
+{% if enrolled %}loadNextStep();{% endif %}
+</script>
+{% endblock %}

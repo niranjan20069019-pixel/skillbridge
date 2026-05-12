@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}SkillBridge — Bridging Rural India to Industry-Ready Skills{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Page-specific overrides */
+  .hero-stat { border-left: 1px solid var(--border); padding-left: 24px; }
+  .hero-stat:first-child { border-left: none; padding-left: 0; }
+  .cat-card { display: block; padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--bg-card); transition: all var(--transition); }
+  .cat-card:hover { border-color: var(--border-md); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .testimonial-stars { color: #f59e0b; font-size: 13px; letter-spacing: 1px; }
+  .footer-link { font-size: 14px; color: var(--text-faint); transition: color var(--transition); }
+  .footer-link:hover { color: var(--brand-light); }
+  @media (max-width: 768px) {
+    .hero-stats { flex-direction: column; gap: 16px; }
+    .hero-stat { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 16px; }
+    .hero-stat:first-child { border-top: none; padding-top: 0; }
+    .hero-cta { flex-direction: column; }
+    .hero-cta a { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── NAV ── -->
+<nav class="topbar glass" style="border-bottom: 1px solid var(--border);">
+  <div class="topbar-inner">
+    <a href="/" class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </div>
+      <span class="logo-text">Skill<span>Bridge</span></span>
+    </a>
+
+    <div style="display:flex;align-items:center;gap:28px;" class="nav-links-desktop">
+      <a href="/courses" style="font-size:14px;font-weight:500;color:var(--text-muted);transition:color var(--transition);" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">Courses</a>
+      <a href="#mission" style="font-size:14px;font-weight:500;color:var(--text-muted);transition:color var(--transition);" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">Mission</a>
+      <a href="#categories" style="font-size:14px;font-weight:500;color:var(--text-muted);transition:color var(--transition);" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">Categories</a>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="/login" class="btn btn-ghost btn-sm">Log In</a>
+      <a href="/register" class="btn btn-primary btn-sm">Get Started Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero-bg" style="min-height:100vh;display:flex;align-items:center;padding-top:60px;">
+  <div class="container" style="padding-top:64px;padding-bottom:64px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+
+      <!-- Left -->
+      <div>
+        <div class="badge badge-blue anim-fade-up" style="margin-bottom:24px;">
+          <span style="width:7px;height:7px;background:#3b82f6;border-radius:50%;display:inline-block;"></span>
+          Empowering 50,000+ learners across rural India
+        </div>
+        <h1 class="anim-fade-up delay-1" style="font-size:clamp(2.4rem,5vw,3.8rem);font-weight:800;line-height:1.1;margin-bottom:20px;">
+          Skills that<br/><span class="text-gradient">unlock</span><br/>your future.
+        </h1>
+        <p class="anim-fade-up delay-2" style="font-size:17px;line-height:1.7;color:var(--text-muted);max-width:480px;margin-bottom:32px;">
+          SkillBridge connects rural learners to industry-ready skills through free, vernacular-friendly courses, mentorship, and job pathways — no degree required.
+        </p>
+        <div class="hero-cta anim-fade-up delay-3" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:48px;">
+          <a href="/register" class="btn btn-primary btn-lg">Start Learning Free →</a>
+          <a href="#mission" class="btn btn-secondary btn-lg">Our Story</a>
+        </div>
+        <div class="hero-stats anim-fade-up delay-4" style="display:flex;gap:0;">
+          <div class="hero-stat">
+            <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:26px;color:var(--brand-light);">50K+</p>
+            <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">Active Learners</p>
+          </div>
+          <div class="hero-stat">
+            <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:26px;color:var(--brand-light);">120+</p>
+            <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">Courses Available</p>
+          </div>
+          <div class="hero-stat">
+            <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:26px;color:var(--brand-light);">18</p>
+            <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">States Covered</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: course preview card -->
+      <div class="anim-fade-up delay-2" style="display:flex;justify-content:center;">
+        <div style="width:100%;max-width:380px;position:relative;">
+          <div class="card" style="padding:24px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🎓</div>
+              <div>
+                <p style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;">Python for Data Science</p>
+                <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">Dr. Priya Sharma · 24 hrs</p>
+              </div>
+            </div>
+            <div style="margin-bottom:16px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+                <span style="color:var(--text-muted);">Progress</span>
+                <span style="color:var(--brand-light);font-weight:700;">72%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:72%;"></div></div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <span class="badge badge-brand">Technology</span>
+              <span class="badge badge-blue">Beginner</span>
+            </div>
+          </div>
+
+          <!-- Floating badge: certificate -->
+          <div class="card anim-fade-in delay-4" style="position:absolute;bottom:-16px;left:-20px;padding:10px 14px;display:flex;align-items:center;gap:10px;min-width:0;">
+            <span style="font-size:22px;">🏆</span>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:var(--brand-light);">Certificate Earned!</p>
+              <p style="font-size:11px;color:var(--text-faint);">Digital Marketing</p>
+            </div>
+          </div>
+
+          <!-- Floating badge: learners -->
+          <div class="card anim-fade-in delay-3" style="position:absolute;top:-12px;right:-16px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:18px;">👥</span>
+            <div>
+              <p style="font-size:12px;font-weight:700;">847 learners</p>
+              <p style="font-size:11px;color:var(--text-faint);">enrolled today</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── MISSION ── -->
+<section id="mission" class="section" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+
+      <!-- Skill gap stats -->
+      <div class="reveal">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--brand-light);margin-bottom:20px;">The Skill Gap Crisis</p>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          {% for pct, text in [("65%","of rural youth lack market-relevant skills"),("83%","have no access to quality vocational training"),("47%","drop out due to lack of vernacular content"),("91%","cannot afford private coaching institutes")] %}
+          <div class="card-flat" style="padding:16px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <p style="font-size:13px;color:var(--text-muted);">{{ text }}</p>
+              <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#ef4444;margin-left:16px;flex-shrink:0;">{{ pct }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill stat-bar" data-width="{{ pct }}" style="width:0;background:#ef4444;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Solution -->
+      <div class="reveal">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--brand-light);margin-bottom:20px;">Our Solution</p>
+        <h2 style="font-size:clamp(1.8rem,3vw,2.6rem);font-weight:800;line-height:1.2;margin-bottom:16px;">
+          Education that meets you<br/><span class="text-gradient">where you are.</span>
+        </h2>
+        <p style="font-size:15px;line-height:1.7;color:var(--text-muted);margin-bottom:28px;">
+          SkillBridge was built for Bharat — not just India. Our courses are available offline, in regional languages, and structured around skills local employers actually need.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          {% for icon, title, desc in [
+            ("🌐","Vernacular-First Content","Courses in Hindi, Tamil, Telugu, Kannada, Bengali & more"),
+            ("📱","Mobile-Optimized & Offline","Download lessons; learn even without internet"),
+            ("🤝","Industry Mentors","Connect with professionals from your district"),
+            ("🏅","Recognized Certificates","Accepted by 500+ MSME employers pan-India"),
+          ] %}
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="width:40px;height:40px;border-radius:10px;background:var(--brand-dim);border:1px solid var(--brand-border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">{{ icon }}</div>
+            <div>
+              <p style="font-weight:600;font-size:14px;margin-bottom:3px;">{{ title }}</p>
+              <p style="font-size:13px;color:var(--text-muted);">{{ desc }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── CATEGORIES ── -->
+<section id="categories" class="section">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:48px;" class="reveal">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--brand-light);margin-bottom:12px;">Explore Skills</p>
+      <h2 style="font-size:clamp(1.8rem,3vw,2.4rem);font-weight:800;margin-bottom:12px;">Course Categories</h2>
+      <p style="font-size:15px;color:var(--text-muted);max-width:480px;margin:0 auto;">Discover pathways across technology, agriculture, finance, and more.</p>
+    </div>
+    <div class="grid-3 reveal" style="grid-template-columns:repeat(3,1fr);">
+      {% set categories_data = [
+        ("💻","Technology","Python, Web Dev, AI Basics","38 courses","#3b82f6"),
+        ("📊","Marketing","SEO, Social Media, Ads","22 courses","#8b5cf6"),
+        ("💰","Finance","Budgeting, Loans, GST","18 courses","#f59e0b"),
+        ("🌱","Agriculture","AgriTech, Organic Farming","25 courses","#10b981"),
+        ("🗣️","Language","English, Communication","15 courses","#06b6d4"),
+        ("❤️","Healthcare","First Aid, Nutrition, ASHA","12 courses","#ef4444"),
+      ] %}
+      {% for icon, cat, desc, count, color in categories_data %}
+      <a href="/courses?category={{ cat }}" class="cat-card">
+        <div style="width:44px;height:44px;border-radius:10px;background:{{ color }}18;border:1px solid {{ color }}33;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;">{{ icon }}</div>
+        <h3 style="font-weight:700;font-size:16px;margin-bottom:4px;">{{ cat }}</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">{{ desc }}</p>
+        <span style="font-size:12px;font-weight:600;color:{{ color }};">{{ count }} →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURED COURSES ── -->
+<section class="section" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:40px;" class="reveal">
+      <div>
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--brand-light);margin-bottom:10px;">Top Picks</p>
+        <h2 style="font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800;">Featured Courses</h2>
+      </div>
+      <a href="/courses" style="font-size:14px;color:var(--brand-light);font-weight:500;">View all →</a>
+    </div>
+    <div class="grid-3 reveal">
+      {% for course in courses[:6] %}
+      <div class="card course-card">
+        <div class="course-thumb">
+          <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/hqdefault.jpg" alt="{{ course.title }}" onerror="this.style.display='none'"/>
+          <div class="course-thumb-overlay"></div>
+          <div class="course-thumb-play">
+            <div class="play-btn">
+              <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:10px;left:10px;display:flex;gap:6px;">
+            <span class="badge badge-brand" style="font-size:10px;">{{ course.category }}</span>
+            <span class="badge badge-blue" style="font-size:10px;">{{ course.level }}</span>
+          </div>
+          <div style="position:absolute;top:10px;right:10px;">
+            <span style="background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);color:#fff;font-size:10px;padding:3px 8px;border-radius:99px;">{{ course.duration_hrs }}h</span>
+          </div>
+        </div>
+        <div class="course-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <p class="course-desc">{{ course.description }}</p>
+          <div class="course-meta">
+            <div class="avatar avatar-sm">{{ course.instructor[0] }}</div>
+            <div style="min-width:0;">
+              <p style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ course.instructor }}</p>
+              <p style="font-size:11px;color:var(--text-faint);">{{ course.get_modules()|length }} modules</p>
+            </div>
+          </div>
+          <div class="course-footer">
+            <span style="font-size:12px;font-weight:700;color:var(--brand-light);">Free</span>
+            <a href="/learn/{{ course.id }}" class="btn btn-primary btn-sm">Enroll Free →</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS ── -->
+<section id="impact" class="section">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:48px;" class="reveal">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--brand-light);margin-bottom:12px;">Real Stories</p>
+      <h2 style="font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800;">Transforming Lives, One Skill at a Time</h2>
+    </div>
+    <div class="grid-3 reveal">
+      {% for quote, name, place, emoji, role in [
+        ("SkillBridge's Python course helped me get a data entry job at a BPO. My family's income doubled in 6 months.","Rekha Devi","Varanasi, UP","👩","Data Entry Specialist"),
+        ("I learned digital marketing and now run social media for 12 local businesses. No one believed a farmer's son could do this.","Arjun Patil","Solapur, MH","👨","Digital Marketing Freelancer"),
+        ("The AgriTech course taught me drip irrigation. My water usage dropped 40% and yields went up. This is the future.","Lakshmi Bai","Tumkur, KA","👩‍🌾","Progressive Farmer"),
+      ] %}
+      <div class="card" style="padding:24px;">
+        <div class="testimonial-stars" style="margin-bottom:14px;">★★★★★</div>
+        <p style="font-size:14px;line-height:1.7;color:var(--text-muted);font-style:italic;margin-bottom:20px;">"{{ quote }}"</p>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--brand-dim);border:1px solid var(--brand-border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">{{ emoji }}</div>
+          <div>
+            <p style="font-weight:600;font-size:14px;">{{ name }}</p>
+            <p style="font-size:12px;color:var(--text-faint);">{{ role }} · {{ place }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid-4 reveal" style="margin-top:48px;">
+      {% for num, label in [("50K+","Active Learners"),("92%","Completion Rate"),("500+","Employer Partners"),("18","States Covered")] %}
+      <div class="card-flat stat-card">
+        <p class="stat-num">{{ num }}</p>
+        <p class="stat-label">{{ label }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="section" style="background:var(--bg-card);border-top:1px solid var(--border);">
+  <div class="container" style="text-align:center;">
+    <div class="reveal" style="max-width:600px;margin:0 auto;">
+      <div class="badge badge-blue" style="margin-bottom:24px;display:inline-flex;">
+        <span style="width:7px;height:7px;background:#3b82f6;border-radius:50%;display:inline-block;"></span>
+        Join 50,000+ learners already building their future
+      </div>
+      <h2 style="font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;line-height:1.2;margin-bottom:16px;">
+        Your skills, your future.<br/><span class="text-gradient">Start today — it's free.</span>
+      </h2>
+      <p style="font-size:16px;color:var(--text-muted);margin-bottom:32px;">No fees, no barriers. Just skills that open doors.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="/register" class="btn btn-primary btn-lg">Join SkillBridge Free →</a>
+        <a href="/courses" class="btn btn-secondary btn-lg">Browse Courses</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer style="background:var(--bg);border-top:1px solid var(--border);padding:56px 0 32px;">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
+      <div>
+        <a href="/" class="logo" style="margin-bottom:14px;display:inline-flex;">
+          <div class="logo-icon"><svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+          <span class="logo-text">Skill<span>Bridge</span></span>
+        </a>
+        <p style="font-size:13px;color:var(--text-faint);line-height:1.6;">Bridging the gap between rural talent and industry-ready skills.</p>
+      </div>
+      {% for title, links in [
+        ("Platform",[("Courses","/courses"),("Dashboard","/dashboard"),("Mentorship","#"),("Certifications","#")]),
+        ("Company",[("About","#"),("Mission","#mission"),("Blog","#"),("Contact","#")]),
+        ("Support",[("Help Center","#"),("Community","#"),("Privacy Policy","#"),("Terms","#")]),
+      ] %}
+      <div>
+        <h4 style="font-weight:700;font-size:13px;margin-bottom:16px;">{{ title }}</h4>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+          {% for text, href in links %}
+          <li><a href="{{ href }}" class="footer-link">{{ text }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="divider" style="margin-bottom:24px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <p style="font-size:12px;color:var(--text-faint);">© 2024 SkillBridge. Built with ❤️ for Bharat.</p>
+      <p style="font-size:12px;color:var(--text-faint);">Supported by Govt. of India Digital Skilling Initiative</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Animate stat bars on scroll */
+const statBars = document.querySelectorAll('.stat-bar');
+const barObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.width = e.target.dataset.width;
+      barObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+statBars.forEach(b => barObs.observe(b));
+</script>
+{% endblock %}

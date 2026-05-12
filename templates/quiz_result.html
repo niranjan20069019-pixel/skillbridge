@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Quiz Result — {{ course.title }} — SkillBridge{% endblock %}
+
+{% block content %}
+<div style="min-height:100vh;background:var(--bg);padding:32px 16px;">
+<div style="max-width:720px;margin:0 auto;">
+
+  <!-- Score card -->
+  <div class="card-flat" style="padding:36px;text-align:center;margin-bottom:24px;">
+    <div style="font-size:52px;margin-bottom:12px;">{% if attempt.passed %}🎉{% else %}📚{% endif %}</div>
+    <h1 style="font-size:26px;font-weight:800;margin-bottom:6px;">{% if attempt.passed %}Congratulations!{% else %}Keep Practising!{% endif %}</h1>
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;">{{ course.title }} · {{ quiz.title }}</p>
+
+    <!-- Score ring -->
+    <div style="width:120px;height:120px;border-radius:50%;border:4px solid {% if attempt.passed %}#10b981{% else %}#ef4444{% endif %};display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+      <span style="font-size:32px;font-weight:800;color:{% if attempt.passed %}#10b981{% else %}#ef4444{% endif %};">{{ attempt.score }}%</span>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+      {% for label, value, color in [
+        ("Correct", attempt.correct_q|string + "/" + attempt.total_q|string, "#10b981"),
+        ("Score", attempt.score|string + "%", "#10b981" if attempt.passed else "#ef4444"),
+        ("Status", "PASSED" if attempt.passed else "FAILED", "#10b981" if attempt.passed else "#ef4444"),
+      ] %}
+      <div class="card-flat" style="padding:14px;">
+        <p style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">{{ label }}</p>
+        <p style="font-size:16px;font-weight:700;color:{{ color }};">{{ value }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <p style="font-size:12px;color:var(--text-faint);margin-bottom:20px;">Pass mark: {{ quiz.pass_pct }}%{% if not attempt.passed %} — Need {{ quiz.pass_pct - attempt.score }} more points.{% endif %}</p>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <a href="/quiz/{{ course.id }}" class="btn btn-secondary">🔄 Retake Quiz</a>
+      {% if cert %}<a href="/certificate/{{ course.id }}" class="btn btn-primary">🏆 View Certificate</a>{% endif %}
+      <a href="/learn/{{ course.id }}" class="btn btn-ghost">← Back to Course</a>
+    </div>
+  </div>
+
+  <!-- Score history chart -->
+  <div class="card-flat" style="padding:20px;margin-bottom:24px;">
+    <h2 style="font-size:15px;font-weight:700;margin-bottom:16px;">📊 Score History</h2>
+    <div id="score-chart" style="display:flex;align-items:flex-end;gap:8px;height:80px;"></div>
+    <p style="font-size:12px;color:var(--text-faint);margin-top:8px;">Your attempts for this course</p>
+  </div>
+
+  <!-- Answer review -->
+  <h2 style="font-size:16px;font-weight:700;margin-bottom:14px;">Answer Review</h2>
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    {% for r in results %}
+    <div class="card-flat" style="padding:20px;border-left:3px solid {% if r.is_correct %}#10b981{% else %}#ef4444{% endif %};">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+        <span style="font-size:18px;flex-shrink:0;">{% if r.is_correct %}✅{% else %}❌{% endif %}</span>
+        <p style="font-size:14px;line-height:1.6;">{{ r.question }}</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        {% for opt in ['a','b','c','d'] %}
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);font-size:13px;
+          {% if opt==r.correct %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.25);
+          {% elif opt==r.chosen and not r.is_correct %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.25);
+          {% else %}border:1px solid var(--border);color:var(--text-faint);{% endif %}">
+          <span style="font-weight:700;text-transform:uppercase;">{{ opt }}.</span>
+          <span style="flex:1;">{{ r.options[opt] }}</span>
+          {% if opt==r.correct %}<span>✓</span>{% elif opt==r.chosen and not r.is_correct %}<span>✗</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if r.explanation %}
+      <div style="display:flex;gap:8px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg-raised);font-size:12px;color:var(--text-muted);">
+        <span style="flex-shrink:0;">💡</span><span>{{ r.explanation }}</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+</div>
+
+<script>
+fetch('/api/quiz-analytics/{{ course.id }}')
+  .then(r => r.json())
+  .then(data => {
+    const chart = document.getElementById('score-chart');
+    if (!data.attempts?.length) { chart.innerHTML = '<p style="font-size:12px;color:var(--text-faint);">No history yet.</p>'; return; }
+    chart.innerHTML = data.attempts.map(a => `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:11px;font-weight:700;color:${a.passed?'#10b981':'#ef4444'};">${a.score}%</span>
+        <div style="width:100%;border-radius:4px 4px 0 0;background:${a.passed?'#10b981':'#ef4444'};min-height:4px;height:${Math.max(4,a.score*0.7)}px;"></div>
+        <span style="font-size:10px;color:var(--text-faint);">${a.date}</span>
+      </div>`).join('');
+  }).catch(()=>{});
+</script>
+{% endblock %}

@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SkillBridge{% endblock %}
+
+{% block extra_head %}
+<style>
+  .app-shell { display:flex; height:100vh; overflow:hidden; background:var(--bg); }
+  .main-scroll { flex:1; overflow-y:auto; }
+  .topbar-inner-dash { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg-card); flex-shrink:0; }
+  .stat-tile { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
+  .enroll-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px; transition:border-color var(--transition); }
+  .enroll-card:hover { border-color:var(--border-md); }
+  .chat-bubble-user { background:var(--brand-dim); color:#bfdbfe; border-radius:14px 14px 4px 14px; padding:7px 11px; font-size:13px; max-width:85%; }
+  .chat-bubble-bot  { background:var(--bg-raised); color:var(--text-muted); border-radius:14px 14px 14px 4px; padding:7px 11px; font-size:13px; max-width:85%; line-height:1.6; }
+  .skill-row { margin-bottom:12px; }
+  .skill-row:last-child { margin-bottom:0; }
+  /* Mobile hamburger */
+  .dash-hamburger { display:none; }
+  @media (max-width:768px) {
+    .dash-hamburger { display:flex; }
+    .dash-two-col { grid-template-columns:1fr !important; }
+    .dash-stats   { grid-template-columns:repeat(2,1fr) !important; }
+    .topbar-inner-dash { padding:0 14px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;">
+          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+
+    <!-- User -->
+    <div style="padding:16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="avatar avatar-md">{{ current_user.name[0].upper() }}</div>
+        <div style="min-width:0;">
+          <p style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.name }}</p>
+          <p style="font-size:12px;color:var(--text-faint);">{{ current_user.interest }}</p>
+        </div>
+      </div>
+      <!-- Skill score -->
+      <div style="background:var(--bg-raised);border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px;">
+        <div style="position:relative;width:40px;height:40px;flex-shrink:0;">
+          <svg width="40" height="40" style="transform:rotate(-90deg);" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="3.5"/>
+            <circle cx="20" cy="20" r="16" fill="none" stroke="var(--brand-light)" stroke-width="3.5"
+              stroke-dasharray="{{ (skill_score/100*100.5)|round(1) }},100.5" stroke-linecap="round"/>
+          </svg>
+          <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--brand-light);">{{ skill_score }}</span>
+        </div>
+        <div>
+          <p style="font-size:12px;font-weight:600;">Skill Score</p>
+          <p style="font-size:11px;color:var(--text-faint);">{% if skill_score >= 80 %}Expert!{% elif skill_score >= 50 %}Keep going!{% else %}Getting started{% endif %}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+      {% set nav = [
+        ("🏠","Overview","#overview",True),
+        ("📚","My Courses","#courses",False),
+        ("📈","Progress","#progress",False),
+        ("🗺️","Skill Paths","/skill-paths",False),
+        ("🏆","Achievements","/gamification",False),
+        ("🤝","Mentors","/mentors",False),
+        ("📊","Analytics","/analytics",False),
+        ("🔍","Browse Courses","/courses",False),
+      ] %}
+      {% for icon, label, href, active in nav %}
+      <a href="{{ href }}" class="nav-link {% if active %}active{% endif %}">
+        <span>{{ icon }}</span>
+        <span>{{ label }}</span>
+        {% if active %}<span style="width:6px;height:6px;border-radius:50%;background:var(--brand-light);margin-left:auto;"></span>{% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Mobile sidebar overlay -->
+  <div class="sidebar-overlay" id="mob-overlay" onclick="closeMobSidebar()"></div>
+  <aside class="sidebar sidebar-mobile" id="mob-sidebar">
+    <!-- same nav as desktop sidebar, shown on mobile -->
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#overview" class="nav-link active" onclick="closeMobSidebar()"><span>🏠</span><span>Overview</span></a>
+      <a href="#courses"  class="nav-link" onclick="closeMobSidebar()"><span>📚</span><span>My Courses</span></a>
+      <a href="#progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span>Progress</span></a>
+      <a href="/skill-paths"  class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="/gamification" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="/mentors"      class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="/analytics"    class="nav-link"><span>📊</span><span>Analytics</span></a>
+      <a href="/courses"      class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="main-scroll" style="display:flex;flex-direction:column;">
+    <!-- Topbar -->
+    <div class="topbar-inner-dash">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <!-- Hamburger (mobile only) -->
+        <button class="btn btn-ghost btn-sm dash-hamburger" onclick="openMobSidebar()" aria-label="Open menu" style="padding:6px 8px;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div>
+          <h1 style="font-size:16px;font-weight:700;">
+            Good {% set h=now.hour %}{% if h<12 %}morning{% elif h<17 %}afternoon{% else %}evening{% endif %}, {{ current_user.name.split()[0] }}! 👋
+          </h1>
+          <p style="font-size:11px;color:var(--text-faint);margin-top:1px;">{{ now.strftime("%A, %d %B %Y") }}</p>
+        </div>
+      </div>
+      <a href="/courses" class="btn btn-primary btn-sm">+ Explore Courses</a>
+    </div>
+
+    <!-- Content -->
+    <div style="padding:28px;display:flex;flex-direction:column;gap:24px;" id="overview">
+
+      <!-- Stats -->
+      {% set completed_count = enrollments|selectattr("progress","equalto",100)|list|length %}
+      {% set hours_studied = (enrollments|sum(attribute="progress") // 10) %}
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;" class="dash-stats">
+        {% for icon, label, value, color in [
+          ("📚","Enrolled",enrollments|length,"var(--brand-light)"),
+          ("✅","Completed",completed_count,"#10b981"),
+          ("⏱️","Hours Studied",hours_studied|string+"h","#8b5cf6"),
+          ("🏅","Certificates",completed_count,"#f59e0b"),
+        ] %}
+        <div class="stat-tile">
+          <span style="font-size:20px;">{{ icon }}</span>
+          <p style="font-size:22px;font-weight:700;color:{{ color }};margin-top:8px;">{{ value }}</p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ label }}</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Two-column -->
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:18px;" class="dash-two-col" id="courses">
+
+        <!-- Left -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- My Courses -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h2 style="font-size:16px;font-weight:700;">My Courses</h2>
+              <a href="/courses" style="font-size:13px;color:var(--brand-light);">Browse more →</a>
+            </div>
+            {% if enrollments %}
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              {% for e in enrollments %}
+              <div class="enroll-card">
+                <div style="display:flex;align-items:flex-start;gap:14px;">
+                  <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-dim);border:1px solid var(--brand-border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+                    {% set cat=e.course.category %}{% if "Tech" in cat or "Program" in cat %}💻{% elif "Market" in cat %}📊{% elif "Finance" in cat %}💰{% elif "Agri" in cat %}🌱{% elif "Lang" in cat %}🗣️{% else %}📖{% endif %}
+                  </div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                      <h3 style="font-size:14px;font-weight:600;line-height:1.3;">{{ e.course.title }}</h3>
+                      <span style="font-size:12px;font-weight:700;flex-shrink:0;color:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};">{{ e.progress }}%</span>
+                    </div>
+                    <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ e.course.instructor }}</p>
+                    <div class="progress-track" style="margin-top:10px;">
+                      <div class="progress-fill enroll-bar" data-w="{{ e.progress }}" style="width:0;background:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};"></div>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+                      <span class="badge badge-brand" style="font-size:10px;">{{ e.course.category }}</span>
+                      <a href="/learn/{{ e.course.id }}" style="font-size:12px;font-weight:600;color:var(--brand-light);">{% if e.progress==100 %}Review{% elif e.progress>0 %}Continue{% else %}Start{% endif %} →</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="card-flat" style="padding:40px;text-align:center;">
+              <p style="font-size:36px;margin-bottom:12px;">📚</p>
+              <p style="font-weight:600;margin-bottom:6px;">No courses yet</p>
+              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Start your learning journey today.</p>
+              <a href="/courses" class="btn btn-primary btn-sm">Browse Courses</a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Skill Progress -->
+          <div class="card-flat" style="padding:20px;" id="progress">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <h2 style="font-size:16px;font-weight:700;">Skill Progress</h2>
+              <button onclick="loadRecs()" style="font-size:12px;color:var(--brand-light);background:none;border:none;cursor:pointer;">AI Recs →</button>
+            </div>
+            {% for skill, pct, color in [("Python",72,"#3b82f6"),("Data Analysis",45,"#8b5cf6"),("Communication",88,"#10b981"),("Digital Marketing",30,"#f59e0b"),("Financial Literacy",55,"#06b6d4")] %}
+            <div class="skill-row">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+                <span style="color:var(--text-muted);">{{ skill }}</span>
+                <span style="font-weight:700;color:{{ color }};">{{ pct }}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill skill-bar" data-w="{{ pct }}" data-color="{{ color }}" style="width:0;"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- AI Recommendations -->
+          <div class="card-flat" style="padding:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h2 style="font-size:14px;font-weight:700;">🤖 AI Recommendations</h2>
+              <button onclick="loadRecs()" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:16px;" title="Refresh">↻</button>
+            </div>
+            <div id="rec-list" style="display:flex;flex-direction:column;gap:8px;">
+              {% for rec in recommendations[:4] %}
+              <div style="background:var(--brand-dim);border:1px solid var(--brand-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#bfdbfe;display:flex;gap:6px;">
+                <span style="color:var(--brand-light);flex-shrink:0;">→</span><span>{{ rec }}</span>
+              </div>
+              {% else %}
+              <p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">Click ↻ to load recommendations</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Peer Mentor Chat -->
+          <div class="card-flat" style="display:flex;flex-direction:column;overflow:hidden;">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+              <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤝</div>
+              <div>
+                <p style="font-size:13px;font-weight:600;">Peer Mentor</p>
+                <p style="font-size:11px;color:#10b981;">Online · AI-powered</p>
+              </div>
+            </div>
+            <div id="chat-msgs" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:240px;min-height:120px;">
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🤝</div>
+                <div class="chat-bubble-bot">Hi {{ current_user.name.split()[0] }}! 👋 Ask me anything about your courses, career, or study tips.</div>
+              </div>
+            </div>
+            <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
+              <input id="chat-in" type="text" placeholder="Ask your mentor…" class="input" style="font-size:13px;padding:8px 12px;"/>
+              <button onclick="sendChat()" class="btn btn-primary btn-sm" style="flex-shrink:0;padding:8px 14px;">→</button>
+            </div>
+          </div>
+
+          <!-- Recommended courses -->
+          <div class="card-flat" style="padding:18px;">
+            <h2 style="font-size:14px;font-weight:700;margin-bottom:14px;">Recommended for You</h2>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              {% set enrolled_ids = enrollments|map(attribute="course")|map(attribute="id")|list %}
+              {% set ns = namespace(n=0) %}
+              {% for c in all_courses %}{% if c.id not in enrolled_ids and ns.n < 4 %}{% set ns.n = ns.n+1 %}
+              <a href="/learn/{{ c.id }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+                <div style="width:38px;height:38px;border-radius:8px;overflow:hidden;background:var(--bg-raised);flex-shrink:0;">
+                  <img src="https://img.youtube.com/vi/{{ c.youtube_id }}/default.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+                </div>
+                <div style="min-width:0;">
+                  <p style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</p>
+                  <p style="font-size:11px;color:var(--text-faint);">{{ c.duration_hrs }}h · Free</p>
+                </div>
+              </a>
+              {% endif %}{% endfor %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="pg-data" style="display:none;" data-name="{{ current_user.name.split()[0] }}" data-interest="{{ current_user.interest }}"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Animate enrollment bars
+  document.querySelectorAll('.enroll-bar').forEach(el => {
+    requestAnimationFrame(() => { el.style.transition='width 0.8s ease'; el.style.width=el.dataset.w+'%'; });
+  });
+  // Animate skill bars on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const el = e.target;
+        el.style.background = el.dataset.color;
+        el.style.transition = 'width 0.9s ease';
+        el.style.width = el.dataset.w + '%';
+        obs.unobserve(el);
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.skill-bar').forEach(el => obs.observe(el));
+});
+
+async function loadRecs() {
+  const list = document.getElementById('rec-list');
+  list.innerHTML = '<p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">Loading…</p>';
+  try {
+    const r = await fetch('/api/recommend');
+    const d = await r.json();
+    const recs = d.recommendations || [];
+    list.innerHTML = recs.length
+      ? recs.map(r => `<div style="background:var(--brand-dim);border:1px solid var(--brand-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#bfdbfe;display:flex;gap:6px;"><span style="color:var(--brand-light);flex-shrink:0;">→</span><span>${esc(r)}</span></div>`).join('')
+      : '<p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">No recommendations yet.</p>';
+  } catch { list.innerHTML = '<p style="font-size:12px;color:#f87171;text-align:center;padding:12px 0;">Failed to load.</p>'; }
+}
+
+const pgData = document.getElementById('pg-data');
+const uName = pgData.dataset.name, uInterest = pgData.dataset.interest;
+const localR = {
+  greet: [`Hey ${uName}! What are you working on today? 🚀`],
+  recommend: [`For ${uInterest}, start with fundamentals then move to hands-on projects. Check "Recommended for You" below!`],
+  study: [`Top tips: 25-min Pomodoro sessions, take notes while watching, review before starting new modules.`],
+  career: [`Complete 2-3 courses, earn your certificate, build a portfolio project — that's what employers look for!`],
+  default: [`Great question! Tell me more about what you're trying to achieve and I'll guide you.`],
+};
+function getLocal(m) {
+  m = m.toLowerCase();
+  if (/hi|hello|hey/.test(m)) return localR.greet[0];
+  if (/recommend|suggest|course/.test(m)) return localR.recommend[0];
+  if (/study|tip|focus/.test(m)) return localR.study[0];
+  if (/career|job|employ/.test(m)) return localR.career[0];
+  return null;
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chat-in');
+  const msg = inp.value.trim(); if (!msg) return;
+  inp.value = ''; inp.disabled = true;
+  const box = document.getElementById('chat-msgs');
+  addBubble(box, 'user', esc(msg));
+  const tid = 'ty' + Date.now();
+  box.insertAdjacentHTML('beforeend', `<div id="${tid}" style="display:flex;gap:8px;align-items:flex-end;"><div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🤝</div><div class="chat-bubble-bot" style="color:var(--text-faint);">…</div></div>`);
+  box.scrollTop = box.scrollHeight;
+  const local = getLocal(msg);
+  try {
+    let reply;
+    if (local) { await new Promise(r => setTimeout(r, 500)); reply = local; }
+    else { const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})}); reply = (await res.json()).reply || "I'm here to help!"; }
+    document.getElementById(tid)?.remove();
+    addBubble(box, 'bot', esc(reply).replace(/\n/g,'<br>'));
+  } catch { document.getElementById(tid)?.remove(); addBubble(box, 'bot', local || "Connection issue. Try again!"); }
+  finally { inp.disabled = false; inp.focus(); }
+}
+
+function addBubble(box, role, html) {
+  const el = document.createElement('div');
+  el.style.cssText = `display:flex;gap:8px;align-items:flex-end;${role==='user'?'justify-content:flex-end;':''}`;
+  el.innerHTML = role === 'user'
+    ? `<div class="chat-bubble-user">${html}</div>`
+    : `<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🤝</div><div class="chat-bubble-bot">${html}</div>`;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+
+document.getElementById('chat-in').addEventListener('keypress', e => { if (e.key==='Enter') sendChat(); });
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Mobile sidebar ────────────────────────────────────────────────────────────
+function openMobSidebar() {
+  document.getElementById('mob-sidebar').classList.add('open');
+  document.getElementById('mob-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobSidebar() {
+  document.getElementById('mob-sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobSidebar(); });
+</script>
+{% endblock %}
