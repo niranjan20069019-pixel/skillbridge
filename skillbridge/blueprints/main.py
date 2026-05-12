@@ -39,6 +39,28 @@ def dashboard():
     )
 
 
+@bp.route("/my-courses")
+@login_required
+def my_courses():
+    enrollments = Enrollment.query.filter_by(user_id=current_user.id).order_by(Enrollment.enrolled_at.desc()).all()
+    return render_template("my_courses.html", enrollments=enrollments)
+
+
+@bp.route("/progress")
+@login_required
+def progress():
+    enrollments       = Enrollment.query.filter_by(user_id=current_user.id).all()
+    profile           = get_or_create_profile(current_user.id)
+    my_badges         = UserBadge.query.filter_by(user_id=current_user.id).all()
+    completed_modules = CompletedModule.query.filter_by(user_id=current_user.id).count()
+    now               = datetime.utcnow()
+    return render_template("progress.html",
+        enrollments=enrollments, profile=profile,
+        my_badges=my_badges, completed_modules=completed_modules,
+        now=now, timedelta=timedelta,
+    )
+
+
 @bp.route("/courses")
 def courses():
     category = request.args.get("category", "")

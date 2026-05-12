@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Progress — SkillBridge{% endblock %}
+
+{% block extra_head %}
+<style>
+  .app-shell { display:flex; height:100vh; overflow:hidden; background:var(--bg); }
+  .main-scroll { flex:1; overflow-y:auto; }
+  .topbar-inner-dash { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg-card); flex-shrink:0; }
+  .streak-day { width:32px; height:32px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+  .streak-day.done  { background:var(--brand-dim); color:#93c5fd; border:1px solid var(--brand-border); }
+  .streak-day.today { background:var(--brand); color:#fff; }
+  .streak-day.miss  { background:rgba(255,255,255,0.04); color:var(--text-faint); border:1px solid var(--border); }
+  .dash-hamburger { display:none; }
+  @media (max-width:768px) {
+    .dash-hamburger { display:flex; }
+    .prog-grid { grid-template-columns:1fr !important; }
+    .topbar-inner-dash { padding:0 14px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;">
+          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <div style="padding:16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar avatar-md">{{ current_user.name[0].upper() }}</div>
+        <div style="min-width:0;">
+          <p style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.name }}</p>
+          <p style="font-size:12px;color:var(--text-faint);">{{ current_user.interest }}</p>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      {% for icon, label, href, active in [
+        ("🏠","Overview","/dashboard",False),
+        ("📚","My Courses","/my-courses",False),
+        ("📈","Progress","/progress",True),
+        ("🗺️","Skill Paths","/skill-paths",False),
+        ("🏆","Achievements","/gamification",False),
+        ("🤝","Mentors","/mentors",False),
+        ("📊","Analytics","/analytics",False),
+        ("🔍","Browse Courses","/courses",False),
+      ] %}
+      <a href="{{ href }}" class="nav-link {% if active %}active{% endif %}">
+        <span>{{ icon }}</span><span>{{ label }}</span>
+        {% if active %}<span style="width:6px;height:6px;border-radius:50%;background:var(--brand-light);margin-left:auto;"></span>{% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="mob-overlay" onclick="closeMobSidebar()"></div>
+  <aside class="sidebar sidebar-mobile" id="mob-sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-link" onclick="closeMobSidebar()"><span>🏠</span><span>Overview</span></a>
+      <a href="/my-courses" class="nav-link" onclick="closeMobSidebar()"><span>📚</span><span>My Courses</span></a>
+      <a href="/progress" class="nav-link active" onclick="closeMobSidebar()"><span>📈</span><span>Progress</span></a>
+      <a href="/skill-paths" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="/gamification" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="/mentors" class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="/analytics" class="nav-link"><span>📊</span><span>Analytics</span></a>
+      <a href="/courses" class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-scroll" style="display:flex;flex-direction:column;">
+    <div class="topbar-inner-dash">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn btn-ghost btn-sm dash-hamburger" onclick="openMobSidebar()" aria-label="Open menu" style="padding:6px 8px;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div>
+          <h1 style="font-size:16px;font-weight:700;">Progress Dashboard</h1>
+          <p style="font-size:11px;color:var(--text-faint);margin-top:1px;">Track your learning journey</p>
+        </div>
+      </div>
+      <a href="/courses" class="btn btn-primary btn-sm">+ Explore Courses</a>
+    </div>
+
+    <div style="padding:28px;display:flex;flex-direction:column;gap:24px;">
+
+      <!-- Stats -->
+      {% set completed_count = enrollments|selectattr("progress","equalto",100)|list|length %}
+      {% set total_progress = (enrollments|sum(attribute="progress") / [enrollments|length,1]|max)|round|int %}
+      {% set hours_studied = (enrollments|sum(attribute="progress") // 10) %}
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+        {% for icon, label, val, color, sub in [
+          ("⚡","Total XP", profile.xp, "var(--brand-light)", "experience points"),
+          ("🔥","Day Streak", profile.streak, "#f59e0b", "days in a row"),
+          ("✅","Completed", completed_count, "#10b981", "courses done"),
+          ("⏱️","Hours Studied", hours_studied|string+"h", "#8b5cf6", "total learning time"),
+        ] %}
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;">
+          <span style="font-size:20px;">{{ icon }}</span>
+          <p style="font-size:24px;font-weight:700;color:{{ color }};margin-top:8px;">{{ val }}</p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ label }}</p>
+          <p style="font-size:11px;color:var(--text-faint);margin-top:1px;">{{ sub }}</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Two-column -->
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;" class="prog-grid">
+
+        <!-- Left -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- XP & Level -->
+          <div class="card-flat" style="padding:20px;">
+            <div style="display:flex;align-items:center;gap:20px;">
+              <div style="position:relative;width:80px;height:80px;flex-shrink:0;">
+                <svg width="80" height="80" style="transform:rotate(-90deg);" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="var(--brand-light)" stroke-width="6"
+                    stroke-dasharray="{{ ((profile.xp % 500) / 500 * 213.6)|round(1) }},213.6" stroke-linecap="round"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <span style="font-size:13px;font-weight:800;color:var(--brand-light);">{{ profile.xp }}</span>
+                  <span style="font-size:9px;color:var(--text-faint);">XP</span>
+                </div>
+              </div>
+              <div style="flex:1;">
+                {% set level = (profile.xp // 500) + 1 %}
+                {% set xp_in_level = profile.xp % 500 %}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                  <span style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;">Level {{ level }}</span>
+                  <span class="badge badge-brand">{% if level >= 10 %}Expert{% elif level >= 5 %}Advanced{% elif level >= 3 %}Intermediate{% else %}Beginner{% endif %}</span>
+                </div>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">{{ xp_in_level }} / 500 XP to Level {{ level + 1 }}</p>
+                <div class="progress-track" style="height:8px;">
+                  <div class="progress-fill" style="width:{{ (xp_in_level / 500 * 100)|round|int }}%;background:linear-gradient(90deg,var(--brand),var(--brand-light));"></div>
+                </div>
+                <p style="font-size:11px;color:var(--text-faint);margin-top:6px;">{{ 500 - xp_in_level }} XP needed for next level</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Course progress -->
+          <div class="card-flat" style="padding:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <h2 style="font-size:15px;font-weight:700;">Course Progress</h2>
+              <a href="/my-courses" style="font-size:12px;color:var(--brand-light);">View all →</a>
+            </div>
+            {% if enrollments %}
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              {% for e in enrollments %}
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                    <span style="font-size:16px;">{% set cat=e.course.category %}{% if "Tech" in cat or "Program" in cat %}💻{% elif "Market" in cat %}📊{% elif "Finance" in cat %}💰{% elif "Agri" in cat %}🌱{% elif "Lang" in cat %}🗣️{% else %}📖{% endif %}</span>
+                    <div style="min-width:0;">
+                      <p style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">{{ e.course.title }}</p>
+                      <p style="font-size:11px;color:var(--text-faint);">{{ e.course.get_modules()|length }} modules · {{ e.course.duration_hrs }}h</p>
+                    </div>
+                  </div>
+                  <span style="font-size:13px;font-weight:700;flex-shrink:0;margin-left:10px;color:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};">{{ e.progress }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" style="width:{{ e.progress }}%;background:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};"></div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:32px 0;">
+              <p style="font-size:32px;margin-bottom:10px;">📚</p>
+              <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">No courses enrolled yet.</p>
+              <a href="/courses" class="btn btn-primary btn-sm">Browse Courses</a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Skill breakdown -->
+          <div class="card-flat" style="padding:20px;">
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:18px;">Skill Breakdown</h2>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              {% for skill, icon, pct, color in [
+                ("Python","💻",72,"#3b82f6"),
+                ("Data Analysis","📊",45,"#8b5cf6"),
+                ("Communication","🗣️",88,"#10b981"),
+                ("Digital Marketing","📣",30,"#f59e0b"),
+                ("Financial Literacy","💰",55,"#06b6d4"),
+              ] %}
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <span style="font-size:13px;color:var(--text-muted);">{{ icon }} {{ skill }}</span>
+                  <span style="font-size:12px;font-weight:700;color:{{ color }};">{{ pct }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill skill-bar" data-w="{{ pct }}" data-color="{{ color }}" style="width:0;"></div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Streak -->
+          <div class="card-flat" style="padding:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h2 style="font-size:14px;font-weight:700;">🔥 Streak</h2>
+              <span style="font-size:20px;font-weight:800;color:#f59e0b;">{{ profile.streak }} days</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px;">
+              {% for i in range(13, -1, -1) %}
+              {% set day_offset = now - timedelta(days=i) %}
+              <div class="streak-day {% if i == 0 %}today{% elif i < profile.streak %}done{% else %}miss{% endif %}" title="{{ day_offset.strftime('%b %d') }}">
+                {{ day_offset.strftime('%d') }}
+              </div>
+              {% endfor %}
+            </div>
+            <p style="font-size:11px;color:var(--text-faint);text-align:center;">Keep learning daily to maintain your streak!</p>
+          </div>
+
+          <!-- Badges -->
+          <div class="card-flat" style="padding:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h2 style="font-size:14px;font-weight:700;">🏅 Badges</h2>
+              <a href="/gamification" style="font-size:12px;color:var(--brand-light);">All →</a>
+            </div>
+            {% if my_badges %}
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+              {% for ub in my_badges[:6] %}
+              <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;" title="{{ ub.badge.name }}">
+                <p style="font-size:22px;margin-bottom:4px;">🏅</p>
+                <p style="font-size:10px;color:var(--text-muted);line-height:1.3;">{{ ub.badge.name }}</p>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:20px 0;">
+              <p style="font-size:28px;margin-bottom:8px;">🏅</p>
+              <p style="font-size:12px;color:var(--text-muted);">Complete courses to earn badges!</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Overall ring -->
+          <div class="card-flat" style="padding:18px;text-align:center;">
+            <h2 style="font-size:14px;font-weight:700;margin-bottom:16px;">Overall Progress</h2>
+            <div style="position:relative;width:100px;height:100px;margin:0 auto 12px;">
+              <svg width="100" height="100" style="transform:rotate(-90deg);" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="7"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--brand-light)" stroke-width="7"
+                  stroke-dasharray="{{ (total_progress / 100 * 263.9)|round(1) }},263.9" stroke-linecap="round"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <span style="font-size:20px;font-weight:800;color:var(--brand-light);">{{ total_progress }}%</span>
+                <span style="font-size:10px;color:var(--text-faint);">avg</span>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);">Average across {{ enrollments|length }} course{% if enrollments|length != 1 %}s{% endif %}</p>
+          </div>
+
+          <!-- Completed modules -->
+          <div class="card-flat" style="padding:18px;">
+            <h2 style="font-size:14px;font-weight:700;margin-bottom:14px;">📋 Completed Modules</h2>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <span style="font-size:28px;font-weight:800;color:#10b981;">{{ completed_modules }}</span>
+              <span style="font-size:12px;color:var(--text-faint);">modules done</span>
+            </div>
+            <div class="progress-track" style="height:6px;">
+              <div class="progress-fill" style="width:{{ [completed_modules * 5, 100]|min }}%;background:#10b981;"></div>
+            </div>
+            <p style="font-size:11px;color:var(--text-faint);margin-top:6px;">Keep going — every module counts!</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openMobSidebar() {
+  document.getElementById('mob-sidebar').classList.add('open');
+  document.getElementById('mob-overlay').classList.add('open');
+}
+function closeMobSidebar() {
+  document.getElementById('mob-sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('open');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.skill-bar').forEach(bar => {
+    setTimeout(() => {
+      bar.style.width = bar.dataset.w + '%';
+      bar.style.background = bar.dataset.color;
+      bar.style.transition = 'width 0.8s ease';
+    }, 200);
+  });
+});
+</script>
+{% endblock %}

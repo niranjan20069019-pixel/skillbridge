@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}My Courses — SkillBridge{% endblock %}
+
+{% block extra_head %}
+<style>
+  .app-shell { display:flex; height:100vh; overflow:hidden; background:var(--bg); }
+  .main-scroll { flex:1; overflow-y:auto; }
+  .topbar-inner-dash { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg-card); flex-shrink:0; }
+  .course-row { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; transition:border-color var(--transition); display:flex; gap:16px; align-items:flex-start; }
+  .course-row:hover { border-color:var(--border-md); }
+  .filter-pill { padding:5px 14px; border-radius:99px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border-md); background:transparent; color:var(--text-muted); transition:all var(--transition); }
+  .filter-pill.active, .filter-pill:hover { background:var(--brand-dim); color:#93c5fd; border-color:var(--brand-border); }
+  .dash-hamburger { display:none; }
+  @media (max-width:768px) {
+    .dash-hamburger { display:flex; }
+    .topbar-inner-dash { padding:0 14px; }
+    .course-row { flex-direction:column; }
+    .course-row-thumb { width:100% !important; height:160px !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;">
+          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <div style="padding:16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar avatar-md">{{ current_user.name[0].upper() }}</div>
+        <div style="min-width:0;">
+          <p style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.name }}</p>
+          <p style="font-size:12px;color:var(--text-faint);">{{ current_user.interest }}</p>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      {% for icon, label, href, active in [
+        ("🏠","Overview","/dashboard",False),
+        ("📚","My Courses","/my-courses",True),
+        ("📈","Progress","/progress",False),
+        ("🗺️","Skill Paths","/skill-paths",False),
+        ("🏆","Achievements","/gamification",False),
+        ("🤝","Mentors","/mentors",False),
+        ("📊","Analytics","/analytics",False),
+        ("🔍","Browse Courses","/courses",False),
+      ] %}
+      <a href="{{ href }}" class="nav-link {% if active %}active{% endif %}">
+        <span>{{ icon }}</span><span>{{ label }}</span>
+        {% if active %}<span style="width:6px;height:6px;border-radius:50%;background:var(--brand-light);margin-left:auto;"></span>{% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="mob-overlay" onclick="closeMobSidebar()"></div>
+  <aside class="sidebar sidebar-mobile" id="mob-sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">
+        <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
+        <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-link" onclick="closeMobSidebar()"><span>🏠</span><span>Overview</span></a>
+      <a href="/my-courses" class="nav-link active" onclick="closeMobSidebar()"><span>📚</span><span>My Courses</span></a>
+      <a href="/progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span>Progress</span></a>
+      <a href="/skill-paths" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="/gamification" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="/mentors" class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="/analytics" class="nav-link"><span>📊</span><span>Analytics</span></a>
+      <a href="/courses" class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-scroll" style="display:flex;flex-direction:column;">
+    <div class="topbar-inner-dash">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn btn-ghost btn-sm dash-hamburger" onclick="openMobSidebar()" aria-label="Open menu" style="padding:6px 8px;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div>
+          <h1 style="font-size:16px;font-weight:700;">My Courses</h1>
+          <p style="font-size:11px;color:var(--text-faint);margin-top:1px;">{{ enrollments|length }} enrolled course{% if enrollments|length != 1 %}s{% endif %}</p>
+        </div>
+      </div>
+      <a href="/courses" class="btn btn-primary btn-sm">+ Browse More</a>
+    </div>
+
+    <div style="padding:28px;display:flex;flex-direction:column;gap:24px;">
+
+      <!-- Stats -->
+      {% set completed = enrollments|selectattr("progress","equalto",100)|list|length %}
+      {% set in_progress = enrollments|selectattr("progress","greaterthan",0)|rejectattr("progress","equalto",100)|list|length %}
+      {% set not_started = enrollments|selectattr("progress","equalto",0)|list|length %}
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+        {% for icon, label, val, color in [
+          ("📚","Total Enrolled", enrollments|length, "var(--brand-light)"),
+          ("✅","Completed", completed, "#10b981"),
+          ("⚡","In Progress", in_progress, "#f59e0b"),
+          ("🔖","Not Started", not_started, "var(--text-muted)"),
+        ] %}
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;">
+          <span style="font-size:20px;">{{ icon }}</span>
+          <p style="font-size:22px;font-weight:700;color:{{ color }};margin-top:8px;">{{ val }}</p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ label }}</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Filters + Search -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="filter-pill active" onclick="filterCourses('all',this)">All</button>
+          <button class="filter-pill" onclick="filterCourses('in-progress',this)">⚡ In Progress</button>
+          <button class="filter-pill" onclick="filterCourses('completed',this)">✅ Completed</button>
+          <button class="filter-pill" onclick="filterCourses('not-started',this)">🔖 Not Started</button>
+        </div>
+        <input type="text" placeholder="Search my courses…" class="input" style="max-width:240px;font-size:13px;" oninput="searchCourses(this.value)"/>
+      </div>
+
+      <!-- Course list -->
+      {% if enrollments %}
+      <div style="display:flex;flex-direction:column;gap:12px;" id="course-list">
+        {% for e in enrollments %}
+        {% set status = "completed" if e.progress == 100 else ("in-progress" if e.progress > 0 else "not-started") %}
+        <div class="course-row" data-status="{{ status }}" data-title="{{ e.course.title|lower }}">
+          <div class="course-row-thumb" style="width:120px;height:80px;border-radius:var(--radius);overflow:hidden;background:var(--bg-raised);flex-shrink:0;position:relative;">
+            <img src="https://img.youtube.com/vi/{{ e.course.youtube_id }}/mqdefault.jpg" alt="{{ e.course.title }}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+            {% if e.progress == 100 %}
+            <div style="position:absolute;inset:0;background:rgba(16,185,129,0.35);display:flex;align-items:center;justify-content:center;font-size:22px;">✅</div>
+            {% endif %}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;">
+              <div>
+                <h3 style="font-size:14px;font-weight:700;line-height:1.35;margin-bottom:3px;">{{ e.course.title }}</h3>
+                <p style="font-size:12px;color:var(--text-faint);">{{ e.course.instructor }} · {{ e.course.duration_hrs }}h · {{ e.course.get_modules()|length }} modules</p>
+              </div>
+              <span class="badge {% if e.progress==100 %}badge-green{% elif e.progress>0 %}badge-amber{% else %}badge-blue{% endif %}" style="flex-shrink:0;">
+                {% if e.progress==100 %}Completed{% elif e.progress>0 %}In Progress{% else %}Not Started{% endif %}
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div class="progress-track" style="flex:1;">
+                <div class="progress-fill" style="width:{{ e.progress }}%;background:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};"></div>
+              </div>
+              <span style="font-size:12px;font-weight:700;flex-shrink:0;color:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};">{{ e.progress }}%</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span class="badge badge-brand" style="font-size:10px;">{{ e.course.category }}</span>
+                <span class="badge badge-blue" style="font-size:10px;">{{ e.course.level }}</span>
+                <span style="font-size:11px;color:var(--text-faint);">Enrolled {{ e.enrolled_at.strftime("%b %d, %Y") }}</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                {% if e.progress == 100 %}<a href="/certificate/{{ e.course.id }}" class="btn btn-ghost btn-sm">🏅 Certificate</a>{% endif %}
+                <a href="/learn/{{ e.course.id }}" class="btn btn-primary btn-sm">{% if e.progress==100 %}Review{% elif e.progress>0 %}Continue{% else %}Start{% endif %} →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div id="empty-filter" style="display:none;text-align:center;padding:60px 0;">
+        <p style="font-size:36px;margin-bottom:12px;">🔍</p>
+        <p style="font-weight:600;margin-bottom:6px;">No courses match this filter</p>
+        <p style="font-size:13px;color:var(--text-muted);">Try a different filter or search term.</p>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:80px 0;">
+        <p style="font-size:48px;margin-bottom:16px;">📚</p>
+        <h3 style="font-size:20px;font-weight:700;margin-bottom:8px;">No courses yet</h3>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;">Start your learning journey by enrolling in a course.</p>
+        <a href="/courses" class="btn btn-primary">Browse Courses</a>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openMobSidebar() {
+  document.getElementById('mob-sidebar').classList.add('open');
+  document.getElementById('mob-overlay').classList.add('open');
+}
+function closeMobSidebar() {
+  document.getElementById('mob-sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('open');
+}
+function filterCourses(filter, btn) {
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const rows = document.querySelectorAll('#course-list .course-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const match = filter === 'all' || row.dataset.status === filter;
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('empty-filter').style.display = visible === 0 ? '' : 'none';
+}
+function searchCourses(q) {
+  const rows = document.querySelectorAll('#course-list .course-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const match = row.dataset.title.includes(q.toLowerCase());
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('empty-filter').style.display = visible === 0 ? '' : 'none';
+}
+</script>
+{% endblock %}

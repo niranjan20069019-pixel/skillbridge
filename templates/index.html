@@ -17,7 +17,18 @@
     .hero-stat:first-child { border-top: none; padding-top: 0; }
     .hero-cta { flex-direction: column; }
     .hero-cta a { width: 100%; justify-content: center; }
+    .nav-links-desktop { display: none !important; }
+    .nav-auth-desktop { display: none !important; }
+    .nav-hamburger { display: flex !important; }
   }
+  .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--text); flex-direction: column; gap: 5px; }
+  .nav-hamburger span { display: block; width: 22px; height: 2px; background: currentColor; border-radius: 2px; transition: all 0.25s; }
+  .nav-mobile-menu { display: none; position: fixed; top: 56px; left: 0; right: 0; background: var(--bg-card); border-bottom: 1px solid var(--border); z-index: 39; padding: 16px 24px; flex-direction: column; gap: 12px; }
+  .nav-mobile-menu.open { display: flex; }
+  .nav-mobile-menu a { font-size: 15px; font-weight: 500; color: var(--text-muted); padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .nav-mobile-menu a:last-child { border-bottom: none; }
+  .nav-mobile-menu .mob-auth { display: flex; gap: 10px; padding-top: 8px; }
+  .nav-mobile-menu .mob-auth a { border-bottom: none; padding: 0; flex: 1; justify-content: center; }
 </style>
 {% endblock %}
 
@@ -41,12 +52,28 @@
       <a href="#categories" style="font-size:14px;font-weight:500;color:var(--text-muted);transition:color var(--transition);" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">Categories</a>
     </div>
 
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;" class="nav-auth-desktop">
       <a href="/login" class="btn btn-ghost btn-sm">Log In</a>
       <a href="/register" class="btn btn-primary btn-sm">Get Started Free</a>
     </div>
+
+    <!-- Hamburger (mobile only) -->
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+
+<!-- Mobile nav menu -->
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <a href="/courses">Courses</a>
+  <a href="#mission" onclick="closeMobileNav()">Mission</a>
+  <a href="#categories" onclick="closeMobileNav()">Categories</a>
+  <div class="mob-auth">
+    <a href="/login" class="btn btn-ghost btn-sm">Log In</a>
+    <a href="/register" class="btn btn-primary btn-sm">Get Started Free</a>
+  </div>
+</div>
 
 <!-- ── HERO ── -->
 <section class="hero-bg" style="min-height:100vh;display:flex;align-items:center;padding-top:60px;">
@@ -371,5 +398,25 @@ const barObs = new IntersectionObserver(entries => {
   });
 }, { threshold: 0.3 });
 statBars.forEach(b => barObs.observe(b));
+</script>
+<script>
+function toggleMobileNav() {
+  const menu = document.getElementById('nav-mobile-menu');
+  const btn = document.getElementById('nav-hamburger');
+  const open = menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open);
+}
+function closeMobileNav() {
+  document.getElementById('nav-mobile-menu').classList.remove('open');
+  document.getElementById('nav-hamburger').setAttribute('aria-expanded', 'false');
+}
+// Close menu when clicking outside
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('nav-mobile-menu');
+  const btn = document.getElementById('nav-hamburger');
+  if (menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) {
+    closeMobileNav();
+  }
+});
 </script>
 {% endblock %}
