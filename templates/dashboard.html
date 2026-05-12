@@ -3,9 +3,9 @@
 
 {% block extra_head %}
 <style>
-  .app-shell { display:flex; height:100vh; overflow:hidden; background:var(--bg); }
-  .main-scroll { flex:1; overflow-y:auto; }
-  .topbar-inner-dash { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg-card); flex-shrink:0; }
+  .app-shell { display:flex; min-height:100vh; background:var(--bg); }
+  .main-scroll { flex:1; min-width:0; overflow-x:hidden; }
+  .topbar-inner-dash { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg-card); flex-shrink:0; position:sticky; top:0; z-index:20; }
   .stat-tile { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
   .enroll-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px; transition:border-color var(--transition); }
   .enroll-card:hover { border-color:var(--border-md); }
@@ -13,13 +13,21 @@
   .chat-bubble-bot  { background:var(--bg-raised); color:var(--text-muted); border-radius:14px 14px 14px 4px; padding:7px 11px; font-size:13px; max-width:85%; line-height:1.6; }
   .skill-row { margin-bottom:12px; }
   .skill-row:last-child { margin-bottom:0; }
-  /* Mobile hamburger */
   .dash-hamburger { display:none; }
   @media (max-width:768px) {
+    .app-shell { flex-direction:column; }
     .dash-hamburger { display:flex; }
     .dash-two-col { grid-template-columns:1fr !important; }
     .dash-stats   { grid-template-columns:repeat(2,1fr) !important; }
-    .topbar-inner-dash { padding:0 14px; }
+    .topbar-inner-dash { padding:0 12px; }
+    .topbar-inner-dash h1 { font-size:14px !important; }
+    .topbar-inner-dash .btn { font-size:12px; padding:5px 10px; }
+    #overview { padding:14px !important; gap:16px !important; }
+  }
+  @media (max-width:400px) {
+    .dash-stats { grid-template-columns:repeat(2,1fr) !important; }
+    .stat-tile { padding:12px; }
+    .stat-tile p:first-of-type { font-size:18px !important; }
   }
 </style>
 {% endblock %}
@@ -330,20 +338,19 @@ async function loadRecs() {
 
 const pgData = document.getElementById('pg-data');
 const uName = pgData.dataset.name, uInterest = pgData.dataset.interest;
-const localR = {
-  greet: [`Hey ${uName}! What are you working on today? 🚀`],
-  recommend: [`For ${uInterest}, start with fundamentals then move to hands-on projects. Check "Recommended for You" below!`],
-  study: [`Top tips: 25-min Pomodoro sessions, take notes while watching, review before starting new modules.`],
-  career: [`Complete 2-3 courses, earn your certificate, build a portfolio project — that's what employers look for!`],
-  default: [`Great question! Tell me more about what you're trying to achieve and I'll guide you.`],
-};
+
 function getLocal(m) {
   m = m.toLowerCase();
-  if (/hi|hello|hey/.test(m)) return localR.greet[0];
-  if (/recommend|suggest|course/.test(m)) return localR.recommend[0];
-  if (/study|tip|focus/.test(m)) return localR.study[0];
-  if (/career|job|employ/.test(m)) return localR.career[0];
+  if (/^(hi|hello|hey)\b/.test(m)) return `Hey ${uName}! 👋 Ask me about courses, progress, study tips, or career advice.`;
   return null;
+}
+
+function renderReply(text) {
+  // Convert **bold** and newlines to HTML
+  return String(text)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
 }
 
 async function sendChat() {
@@ -358,10 +365,10 @@ async function sendChat() {
   const local = getLocal(msg);
   try {
     let reply;
-    if (local) { await new Promise(r => setTimeout(r, 500)); reply = local; }
+    if (local) { await new Promise(r => setTimeout(r, 400)); reply = local; }
     else { const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})}); reply = (await res.json()).reply || "I'm here to help!"; }
     document.getElementById(tid)?.remove();
-    addBubble(box, 'bot', esc(reply).replace(/\n/g,'<br>'));
+    addBubble(box, 'bot', renderReply(reply));
   } catch { document.getElementById(tid)?.remove(); addBubble(box, 'bot', local || "Connection issue. Try again!"); }
   finally { inp.disabled = false; inp.focus(); }
 }

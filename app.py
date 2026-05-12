@@ -2055,6 +2055,22 @@ def set_language():
     return jsonify({"status": "ok", "language": lang, "label": SUPPORTED_LANGUAGES[lang]})
 
 
+@app.route("/api/suggested-videos")
+@login_required
+def suggested_videos():
+    """Return suggested videos for a course — used by the Videos tab in learn.html."""
+    course_id = request.args.get("course_id", type=int)
+    lang = request.args.get("lang") or current_user.language or "en"
+    if not course_id:
+        return jsonify({"videos": [], "error": "course_id required"}), 400
+    course = Course.query.get_or_404(course_id)
+    videos = get_videos_for_course(course, lang)
+    # Rename 'id' → 'video_id' for the frontend
+    for v in videos:
+        v["video_id"] = v.pop("id", v.get("video_id", ""))
+    return jsonify({"videos": videos, "course": course.title, "language": lang})
+
+
 @app.route("/api/youtube-videos/<int:course_id>")
 @login_required
 def youtube_videos(course_id):
@@ -2160,22 +2176,165 @@ def translate_notes(course_id):
     return jsonify({"notes": "\n".join(translated_chunks), "lang": lang, "translated": True})
 
 
+@app.route("/api/translate", methods=["POST"])
+@login_required
+def translate_text():
+    """Translate arbitrary text via MyMemory free API."""
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", "").strip()
+    lang = data.get("target_lang", "en")
+    if not text or lang == "en":
+        return jsonify({"translated": text, "lang": lang})
+    try:
+        params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
+        url = f"https://api.mymemory.translated.net/get?{params}"
+        with urllib.request.urlopen(url, timeout=6) as resp:
+            d = json.loads(resp.read().decode())
+        return jsonify({"translated": d.get("responseData", {}).get("translatedText", text), "lang": lang})
+    except Exception:
+        return jsonify({"translated": text, "lang": lang})
+
+
+@app.route("/api/translate-quiz/<int:course_id>")
+@login_required
+def translate_quiz(course_id):
+    """Return quiz questions translated to the user's preferred language."""
+    quiz = Quiz.query.filter_by(course_id=course_id).first_or_404()
+    lang = request.args.get("lang") or current_user.language or "en"
+    questions = quiz.questions.all()
+
+    if lang == "en":
+        return jsonify({"questions": [
+            {"id": q.id, "question": q.question,
+             "option_a": q.option_a, "option_b": q.option_b,
+             "option_c": q.option_c, "option_d": q.option_d}
+            for q in questions
+        ], "translated": False})
+
+    def translate(text):
+        if not text:
+            return text
+        try:
+            params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
+            url = f"https://api.mymemory.translated.net/get?{params}"
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                d = json.loads(resp.read().decode())
+            return d.get("responseData", {}).get("translatedText", text)
+        except Exception:
+            return text
+
+    translated = []
+    for q in questions:
+        translated.append({
+            "id": q.id,
+            "question": translate(q.question),
+            "option_a": translate(q.option_a),
+            "option_b": translate(q.option_b),
+            "option_c": translate(q.option_c),
+            "option_d": translate(q.option_d),
+        })
+    return jsonify({"questions": translated, "translated": True, "lang": lang})
+
+
 @app.route("/api/chat", methods=["POST"])
 @login_required
 def chat():
-    """Simulated peer-mentor chat (demo)."""
-    data    = request.get_json()
-    message = data.get("message", "").lower()
-    replies = {
-        "help":     "Sure! Check the Resources tab or ask your mentor. 😊",
-        "course":   "You can browse all courses at /courses. Filter by category!",
-        "progress": f"You're at {current_user.enrollments.first().progress if current_user.enrollments.first() else 0}% — keep going!",
-        "certificate": "Certificates are issued at 100% completion. Almost there!",
-    }
-    for key, reply in replies.items():
-        if key in message:
-            return jsonify({"reply": reply})
-    return jsonify({"reply": "Great question! Your mentor will respond shortly. Meanwhile, check the Resources section. 📚"})
+    """Peer-mentor chat: suggests courses based on user interest and progress."""
+    data    = request.get_json(silent=True) or {}
+    message = data.get("message", "").lower().strip()
+
+    # Gather user context
+    interest   = current_user.interest or "Technology"
+    name       = current_user.name.split()[0]
+    enrollments = current_user.enrollments.all()
+    enrolled_ids = {e.course_id for e in enrollments}
+    in_progress  = [e for e in enrollments if 0 < e.progress < 100]
+    completed    = [e for e in enrollments if e.progress >= 100]
+
+    # Courses not yet enrolled in, matching interest
+    suggested = Course.query.filter(
+        Course.category == interest,
+        ~Course.id.in_(enrolled_ids)
+    ).limit(3).all()
+    # Fallback: any unenrolled courses
+    if not suggested:
+        suggested = Course.query.filter(~Course.id.in_(enrolled_ids)).limit(3).all()
+
+    def course_list(courses):
+        return "\n".join(f"• {c.title} ({c.level}, {c.duration_hrs}h) → /learn/{c.id}" for c in courses)
+
+    # Intent matching
+    if any(w in message for w in ("hi", "hello", "hey", "start", "begin")):
+        reply = (f"Hey {name}! 👋 I'm your AI peer mentor.\n\n"
+                 f"You're interested in **{interest}**. Here are courses I recommend:\n"
+                 f"{course_list(suggested) if suggested else 'All courses enrolled!'}\n\n"
+                 f"Ask me about study tips, career advice, or type 'progress' to see your status.")
+
+    elif any(w in message for w in ("recommend", "suggest", "course", "learn", "what should", "next")):
+        if suggested:
+            reply = (f"Based on your interest in **{interest}**, here are your next courses:\n\n"
+                     f"{course_list(suggested)}\n\n"
+                     f"You have {len(in_progress)} course(s) in progress. "
+                     f"{'Finish those first for best results! 💪' if in_progress else 'Start one today!'}")
+        else:
+            reply = f"You're enrolled in all {interest} courses! Try exploring other categories at /courses 🎉"
+
+    elif any(w in message for w in ("progress", "status", "how am i", "doing")):
+        if not enrollments:
+            reply = f"You haven't enrolled in any courses yet, {name}. Start with: {suggested[0].title if suggested else 'Browse /courses'}"
+        else:
+            lines = [f"📊 Your learning progress, {name}:"]
+            for e in enrollments[:4]:
+                bar = "█" * (e.progress // 10) + "░" * (10 - e.progress // 10)
+                lines.append(f"• {e.course.title}: {bar} {e.progress}%")
+            if len(enrollments) > 4:
+                lines.append(f"  …and {len(enrollments)-4} more courses")
+            if completed:
+                lines.append(f"\n✅ Completed: {len(completed)} course(s). Great work!")
+            if in_progress:
+                # Suggest the one closest to completion
+                closest = max(in_progress, key=lambda e: e.progress)
+                lines.append(f"\n🎯 Almost done: **{closest.course.title}** at {closest.progress}% — keep going!")
+            reply = "\n".join(lines)
+
+    elif any(w in message for w in ("study", "tip", "focus", "how to", "advice")):
+        reply = (f"Top study tips for {interest}:\n\n"
+                 "• Use 25-min Pomodoro sessions with 5-min breaks\n"
+                 "• Take notes while watching — don't just passively view\n"
+                 "• Build a small project after each module\n"
+                 "• Review yesterday's notes before starting today\n"
+                 "• Consistency beats intensity — 30 min/day > 4 hrs on weekends 🔥")
+
+    elif any(w in message for w in ("career", "job", "employ", "salary", "work")):
+        reply = (f"Career path for **{interest}**:\n\n"
+                 "1. Complete 2–3 courses and earn certificates\n"
+                 "2. Build a portfolio project (even a small one counts)\n"
+                 "3. Add skills to LinkedIn and update your resume\n"
+                 "4. Apply to internships or freelance gigs first\n"
+                 "5. Check /skill-paths for a structured roadmap 🗺️")
+
+    elif any(w in message for w in ("certificate", "cert", "badge")):
+        reply = ("Certificates are issued when you:\n"
+                 "✓ Reach 100% course progress\n"
+                 "✓ Pass the quiz (≥60%)\n\n"
+                 f"You've earned {len(completed)} certificate(s) so far. "
+                 f"{'Keep going!' if len(completed) < len(enrollments) else 'Amazing — you completed everything! 🏆'}")
+
+    elif any(w in message for w in ("quiz", "test", "exam")):
+        reply = ("Quiz tips:\n\n"
+                 "• Review the course notes before attempting\n"
+                 "• You can retake quizzes — each attempt improves your score\n"
+                 "• Read each question carefully — watch for 'NOT' and 'EXCEPT'\n"
+                 "• Pass mark is 60%. You've got this! 🧠")
+
+    else:
+        # Generic helpful response with course suggestion
+        reply = (f"I'm here to help, {name}! 😊\n\n"
+                 f"Since you're into **{interest}**, you might like:\n"
+                 f"{course_list(suggested[:2]) if suggested else 'All courses enrolled!'}\n\n"
+                 "Ask me about: courses, progress, study tips, career, or certificates.")
+
+    return jsonify({"reply": reply})
 
 
 # ── Gamification ──────────────────────────────────────────────────────────────

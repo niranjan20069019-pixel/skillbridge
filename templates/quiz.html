@@ -8,40 +8,62 @@
   .opt-label.selected { border-color:var(--brand);background:var(--brand-dim); }
   .opt-circle { width:32px;height:32px;border-radius:50%;border:2px solid var(--border-md);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-faint);flex-shrink:0;transition:all var(--transition); }
   .opt-label.selected .opt-circle { border-color:var(--brand-light);color:var(--brand-light); }
+  @media (max-width:600px) {
+    .quiz-header { flex-direction:column !important; align-items:flex-start !important; }
+    #timer-box { align-self:flex-end; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="min-height:100vh;background:var(--bg);padding:32px 16px;">
+<div style="min-height:100vh;background:var(--bg);padding:24px 16px;">
 <div style="max-width:720px;margin:0 auto;">
 
   <!-- Header -->
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+  <div class="quiz-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
     <div>
       <a href="/learn/{{ course.id }}" style="font-size:13px;color:var(--text-faint);display:inline-block;margin-bottom:8px;">← Back to Course</a>
       <h1 style="font-size:22px;font-weight:800;margin-bottom:4px;">{{ quiz.title }}</h1>
       <p style="font-size:13px;color:var(--text-muted);">{{ questions|length }} questions · Pass mark {{ quiz.pass_pct }}%</p>
     </div>
-    <!-- Timer -->
-    <div class="card-flat" style="padding:14px 20px;text-align:center;min-width:100px;" id="timer-box">
-      <p style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">Time Left</p>
-      <p id="timer" style="font-size:24px;font-weight:800;color:var(--brand-light);">--:--</p>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+      <!-- Language selector -->
+      {% if current_user.language and current_user.language != 'en' %}
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span style="font-size:12px;color:var(--text-faint);">🌐</span>
+        <select id="quiz-lang-select" onchange="translateQuiz(this.value)" class="input" style="width:auto;font-size:12px;padding:5px 28px 5px 9px;">
+          {% for code,label in SUPPORTED_LANGUAGES.items() %}
+          <option value="{{ code }}" {% if code==current_user.language %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <!-- Timer -->
+      <div class="card-flat" style="padding:12px 18px;text-align:center;min-width:90px;" id="timer-box">
+        <p style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">Time Left</p>
+        <p id="timer" style="font-size:22px;font-weight:800;color:var(--brand-light);">--:--</p>
+      </div>
     </div>
+  </div>
+
+  <!-- Translation status -->
+  <div id="translate-status" style="display:none;margin-bottom:16px;padding:10px 14px;border-radius:var(--radius);background:var(--brand-dim);border:1px solid var(--brand-border);font-size:13px;color:#bfdbfe;">
+    <span id="translate-msg">Translating questions…</span>
   </div>
 
   <!-- Form -->
   <form id="quiz-form" method="POST" action="/quiz/{{ course.id }}/submit">
-    <div style="display:flex;flex-direction:column;gap:16px;">
+    <div id="questions-container" style="display:flex;flex-direction:column;gap:16px;">
       {% for q in questions %}
-      <div class="card-flat" style="padding:22px;">
+      <div class="card-flat" style="padding:20px;" data-qid="{{ q.id }}">
         <p style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Question {{ loop.index }} of {{ questions|length }}</p>
-        <p style="font-size:15px;font-weight:500;line-height:1.6;margin-bottom:16px;">{{ q.question }}</p>
+        <p class="q-text" style="font-size:15px;font-weight:500;line-height:1.6;margin-bottom:16px;">{{ q.question }}</p>
         <div style="display:flex;flex-direction:column;gap:8px;">
           {% for opt, label in [('a',q.option_a),('b',q.option_b),('c',q.option_c),('d',q.option_d)] %}
           <label class="opt-label" data-name="q_{{ q.id }}" data-opt="{{ opt }}">
             <input type="radio" name="q_{{ q.id }}" value="{{ opt }}" style="display:none;" onchange="selectOpt(this)"/>
             <span class="opt-circle">{{ opt|upper }}</span>
-            <span style="font-size:14px;color:var(--text-muted);">{{ label }}</span>
+            <span class="opt-text" style="font-size:14px;color:var(--text-muted);">{{ label }}</span>
           </label>
           {% endfor %}
         </div>
@@ -67,7 +89,7 @@
     <h2 style="font-size:16px;font-weight:700;margin-bottom:14px;">Past Attempts</h2>
     <div style="display:flex;flex-direction:column;gap:8px;">
       {% for a in attempts %}
-      <div class="card-flat" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+      <div class="card-flat" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div>
           <p style="font-size:14px;font-weight:500;">{{ a.correct_q }}/{{ a.total_q }} correct
             <span class="badge {% if a.passed %}badge-green{% else %}badge-red{% endif %}" style="margin-left:8px;">{% if a.passed %}PASSED{% else %}FAILED{% endif %}</span>
@@ -86,6 +108,9 @@
 
 <script>
 const TOTAL = {{ questions|length }};
+const COURSE_ID = {{ course.id }};
+const USER_LANG = "{{ current_user.language or 'en' }}";
+
 let timeLeft = {{ quiz.time_limit }};
 const timerEl = document.getElementById('timer');
 const timerBox = document.getElementById('timer-box');
@@ -112,6 +137,49 @@ function selectOpt(input) {
 document.getElementById('quiz-form').addEventListener('submit', e => {
   const answered = new Set([...document.querySelectorAll('input[type=radio]:checked')].map(r => r.name)).size;
   if (answered < TOTAL && !confirm(`${answered}/${TOTAL} answered. Submit anyway?`)) e.preventDefault();
+});
+
+// ── Quiz Translation ──────────────────────────────────────────────────────────
+let _translatedLang = 'en';
+
+async function translateQuiz(lang) {
+  if (lang === _translatedLang) return;
+  const status = document.getElementById('translate-status');
+  const msg    = document.getElementById('translate-msg');
+  if (lang === 'en') {
+    // Reload page to restore original questions
+    location.reload();
+    return;
+  }
+  status.style.display = 'block';
+  msg.textContent = 'Translating questions…';
+  try {
+    const res  = await fetch(`/api/translate-quiz/${COURSE_ID}?lang=${lang}`);
+    const data = await res.json();
+    if (!data.translated) { status.style.display = 'none'; return; }
+    data.questions.forEach(q => {
+      const card = document.querySelector(`[data-qid="${q.id}"]`);
+      if (!card) return;
+      card.querySelector('.q-text').textContent = q.question;
+      const opts = card.querySelectorAll('.opt-text');
+      [q.option_a, q.option_b, q.option_c, q.option_d].forEach((txt, i) => {
+        if (opts[i]) opts[i].textContent = txt;
+      });
+    });
+    _translatedLang = lang;
+    msg.textContent = `✓ Questions translated to ${lang.toUpperCase()}`;
+    setTimeout(() => { status.style.display = 'none'; }, 2500);
+  } catch {
+    msg.textContent = 'Translation failed. Showing original.';
+    setTimeout(() => { status.style.display = 'none'; }, 2000);
+  }
+}
+
+// Auto-translate if user's language is not English
+document.addEventListener('DOMContentLoaded', () => {
+  if (USER_LANG && USER_LANG !== 'en') {
+    translateQuiz(USER_LANG);
+  }
 });
 </script>
 {% endblock %}

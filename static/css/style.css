@@ -234,21 +234,34 @@ label.field-label { display:block; font-size:11px; font-weight:600; color:var(--
   .grid-4 { grid-template-columns:repeat(2,1fr); }
   .grid-3 { grid-template-columns:repeat(2,1fr); }
   .learn-outline { display:none; }
-  .learn-outline.mobile-open { display:flex; position:fixed; top:var(--learn-topbar-h); right:0; bottom:0; z-index:100; box-shadow:var(--shadow-lg); }
+  .learn-outline.mobile-open { display:flex; position:fixed; top:var(--learn-topbar-h); right:0; bottom:0; z-index:100; box-shadow:var(--shadow-lg); width:min(320px,90vw); }
   .notes-split { grid-template-columns:1fr; }
 }
 @media (max-width:768px) {
   :root { --learn-sidebar-w:100vw; }
   .container { padding:0 14px; }
-  .section { padding:48px 0; }
+  .section { padding:40px 0; }
   .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; }
+  /* Sidebar hidden on mobile — use mobile overlay instead */
   .sidebar { display:none; }
   .btn-lg { padding:11px 20px; font-size:14px; }
   .topbar-inner { padding:0 14px; }
   .learn-topbar { padding:0 12px; }
+  /* Learn page: full-width content */
+  .learn-body { flex-direction:column; overflow:visible; }
+  .learn-content { overflow:visible; }
+  .learn-shell { height:auto; min-height:100vh; }
+  /* Tab bar scrollable */
+  .tab-bar { -webkit-overflow-scrolling:touch; }
+  /* Overview grid on mobile */
+  .tab-panel { padding:14px; }
+  /* Card padding reduction */
+  .card-flat { border-radius:var(--radius); }
 }
 @media (max-width:480px) {
-  .tab-btn { padding:10px 11px; font-size:12px; }
+  .tab-btn { padding:10px 10px; font-size:11px; }
+  .flash-wrap { top:8px; right:8px; left:8px; width:auto; max-width:none; }
+  .a11y-bar { bottom:8px; right:8px; }
 }
 
 /* ── Reduced motion ── */

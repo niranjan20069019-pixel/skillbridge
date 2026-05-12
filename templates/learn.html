@@ -206,7 +206,7 @@
           </div>
         </div>
         <div id="video-list" style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
-          <div style="text-align:center;padding:32px;color:var(--text-faint);font-size:13px;">Click the Videos tab to load suggestions…</div>
+          <div style="text-align:center;padding:32px;color:var(--text-faint);font-size:13px;">Loading videos…</div>
         </div>
         <div id="video-player-section" style="display:none;margin-top:14px;">
           <div class="card-flat" style="overflow:hidden;">
@@ -305,6 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cb = document.getElementById('outline-close');
     if (cb) cb.style.display = 'block';
   }
+  // Auto-load videos for the current course
+  loadVideos(USER_LANG || 'en');
 });
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
@@ -313,7 +315,10 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name)?.classList.add('active');
   document.getElementById('panel-' + name)?.classList.add('active');
-  if (name === 'Videos') loadVideos(document.getElementById('video-lang-select').value);
+  if (name === 'Videos') {
+    const lang = document.getElementById('video-lang-select').value;
+    if (_videosLang !== lang) loadVideos(lang);
+  }
 }
 
 // ── Outline section toggle ────────────────────────────────────────────────────
@@ -431,12 +436,14 @@ async function loadVideos(lang) {
       list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-faint);font-size:13px;">No videos found.</div>';
       return;
     }
-    list.innerHTML = videos.map(v => `
-      <div onclick="playVideo('${esc(v.video_id)}','${esc(v.title)}','${esc(v.channel)}')"
+    list.innerHTML = videos.map(v => {
+      const vid = v.video_id || v.id || '';
+      return `
+      <div onclick="playVideo('${esc(vid)}','${esc(v.title)}','${esc(v.channel)}')"
            style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background var(--transition);"
            onmouseover="this.style.background='var(--bg-raised)'" onmouseout="this.style.background=''">
         <div style="position:relative;width:90px;height:51px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--bg-raised);">
-          <img src="https://img.youtube.com/vi/${esc(v.video_id)}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+          <img src="https://img.youtube.com/vi/${esc(vid)}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
             <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;">
               <svg width="9" height="9" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -445,9 +452,10 @@ async function loadVideos(lang) {
         </div>
         <div style="min-width:0;flex:1;">
           <p style="font-size:12px;font-weight:500;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(v.title)}</p>
-          <p style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(v.channel)}</p>
+          <p style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(v.channel)}${v.duration ? ' · ' + esc(v.duration) : ''}</p>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch { list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-faint);font-size:13px;">Failed to load.</div>'; }
 }
 
