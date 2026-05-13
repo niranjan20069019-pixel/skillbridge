@@ -5,6 +5,8 @@ import random
 import urllib.request
 import urllib.parse
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.abspath(os.path.dirname(__file__)), ".env"))
 from flask import (
     Flask, render_template, request, redirect,
     url_for, flash, jsonify, session, send_from_directory, abort
@@ -30,6 +32,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
     BASE_DIR, "instance", "skillbridge.db"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["GOOGLE_TRANSLATE_API_KEY"] = os.environ.get("GOOGLE_TRANSLATE_API_KEY", "")
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
