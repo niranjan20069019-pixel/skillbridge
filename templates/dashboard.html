@@ -87,15 +87,15 @@
       {% for icon, label, href, active in nav %}
       <a href="{{ href }}" class="nav-link {% if active %}active{% endif %}">
         <span>{{ icon }}</span>
-        <span>{{ label }}</span>
+        <span data-i18n>{{ label }}</span>
         {% if active %}<span style="width:6px;height:6px;border-radius:50%;background:var(--brand-light);margin-left:auto;"></span>{% endif %}
       </a>
       {% endfor %}
     </nav>
 
     <div class="sidebar-footer">
-      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
-      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+      <a href="/" class="nav-link"><span>🏠</span><span data-i18n>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span data-i18n>Logout</span></a>
     </div>
   </aside>
 
@@ -110,18 +110,18 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a href="#overview" class="nav-link active" onclick="closeMobSidebar()"><span>🏠</span><span>Overview</span></a>
-      <a href="#courses"  class="nav-link" onclick="closeMobSidebar()"><span>📚</span><span>My Courses</span></a>
-      <a href="#progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span>Progress</span></a>
-      <a href="/skill-paths"  class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
-      <a href="/gamification" class="nav-link"><span>🏆</span><span>Achievements</span></a>
-      <a href="/mentors"      class="nav-link"><span>🤝</span><span>Mentors</span></a>
-      <a href="/analytics"    class="nav-link"><span>📊</span><span>Analytics</span></a>
-      <a href="/courses"      class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
+      <a href="#overview" class="nav-link active" onclick="closeMobSidebar()"><span>🏠</span><span data-i18n>Overview</span></a>
+      <a href="#courses"  class="nav-link" onclick="closeMobSidebar()"><span>📚</span><span data-i18n>My Courses</span></a>
+      <a href="#progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span data-i18n>Progress</span></a>
+      <a href="/skill-paths"  class="nav-link"><span>🗺️</span><span data-i18n>Skill Paths</span></a>
+      <a href="/gamification" class="nav-link"><span>🏆</span><span data-i18n>Achievements</span></a>
+      <a href="/mentors"      class="nav-link"><span>🤝</span><span data-i18n>Mentors</span></a>
+      <a href="/analytics"    class="nav-link"><span>📊</span><span data-i18n>Analytics</span></a>
+      <a href="/courses"      class="nav-link"><span>🔍</span><span data-i18n>Browse Courses</span></a>
     </nav>
     <div class="sidebar-footer">
-      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
-      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+      <a href="/" class="nav-link"><span>🏠</span><span data-i18n>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span data-i18n>Logout</span></a>
     </div>
   </aside>
 
@@ -141,7 +141,14 @@
           <p style="font-size:11px;color:var(--text-faint);margin-top:1px;">{{ now.strftime("%A, %d %B %Y") }}</p>
         </div>
       </div>
-      <a href="/courses" class="btn btn-primary btn-sm">+ Explore Courses</a>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="page-lang-select" onchange="setAndTranslatePage(this.value)" class="input" style="width:auto;font-size:12px;padding:5px 28px 5px 9px;" title="Change language">
+          {% for code, label in SUPPORTED_LANGUAGES.items() %}
+          <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <a href="/courses" class="btn btn-primary btn-sm" data-i18n>+ Explore Courses</a>
+      </div>
     </div>
 
     <!-- Content -->
@@ -160,7 +167,7 @@
         <div class="stat-tile">
           <span style="font-size:20px;">{{ icon }}</span>
           <p style="font-size:22px;font-weight:700;color:{{ color }};margin-top:8px;">{{ value }}</p>
-          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ label }}</p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;" data-i18n>{{ label }}</p>
         </div>
         {% endfor %}
       </div>
@@ -174,8 +181,8 @@
           <!-- My Courses -->
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <h2 style="font-size:16px;font-weight:700;">My Courses</h2>
-              <a href="/courses" style="font-size:13px;color:var(--brand-light);">Browse more →</a>
+              <h2 style="font-size:16px;font-weight:700;" data-i18n>My Courses</h2>
+              <a href="/courses" style="font-size:13px;color:var(--brand-light);" data-i18n>Browse more →</a>
             </div>
             {% if enrollments %}
             <div style="display:flex;flex-direction:column;gap:10px;">
@@ -196,7 +203,7 @@
                     </div>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
                       <span class="badge badge-brand" style="font-size:10px;">{{ e.course.category }}</span>
-                      <a href="/learn/{{ e.course.id }}" style="font-size:12px;font-weight:600;color:var(--brand-light);">{% if e.progress==100 %}Review{% elif e.progress>0 %}Continue{% else %}Start{% endif %} →</a>
+                      <a href="/learn/{{ e.course.id }}" style="font-size:12px;font-weight:600;color:var(--brand-light);" data-i18n>{% if e.progress==100 %}Review{% elif e.progress>0 %}Continue{% else %}Start{% endif %} →</a>
                     </div>
                   </div>
                 </div>
@@ -206,9 +213,9 @@
             {% else %}
             <div class="card-flat" style="padding:40px;text-align:center;">
               <p style="font-size:36px;margin-bottom:12px;">📚</p>
-              <p style="font-weight:600;margin-bottom:6px;">No courses yet</p>
-              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Start your learning journey today.</p>
-              <a href="/courses" class="btn btn-primary btn-sm">Browse Courses</a>
+              <p style="font-weight:600;margin-bottom:6px;" data-i18n>No courses yet</p>
+              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;" data-i18n>Start your learning journey today.</p>
+              <a href="/courses" class="btn btn-primary btn-sm" data-i18n>Browse Courses</a>
             </div>
             {% endif %}
           </div>
@@ -216,8 +223,8 @@
           <!-- Skill Progress -->
           <div class="card-flat" style="padding:20px;" id="progress">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-              <h2 style="font-size:16px;font-weight:700;">Skill Progress</h2>
-              <button onclick="loadRecs()" style="font-size:12px;color:var(--brand-light);background:none;border:none;cursor:pointer;">AI Recs →</button>
+              <h2 style="font-size:16px;font-weight:700;" data-i18n>Skill Progress</h2>
+              <button onclick="loadRecs()" style="font-size:12px;color:var(--brand-light);background:none;border:none;cursor:pointer;" data-i18n>AI Recs →</button>
             </div>
             {% for skill, pct, color in [("Python",72,"#3b82f6"),("Data Analysis",45,"#8b5cf6"),("Communication",88,"#10b981"),("Digital Marketing",30,"#f59e0b"),("Financial Literacy",55,"#06b6d4")] %}
             <div class="skill-row">
@@ -239,7 +246,7 @@
           <!-- AI Recommendations -->
           <div class="card-flat" style="padding:18px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <h2 style="font-size:14px;font-weight:700;">🤖 AI Recommendations</h2>
+              <h2 style="font-size:14px;font-weight:700;" data-i18n>🤖 AI Recommendations</h2>
               <button onclick="loadRecs()" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:16px;" title="Refresh">↻</button>
             </div>
             <div id="rec-list" style="display:flex;flex-direction:column;gap:8px;">
@@ -258,8 +265,8 @@
             <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
               <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤝</div>
               <div>
-                <p style="font-size:13px;font-weight:600;">Peer Mentor</p>
-                <p style="font-size:11px;color:#10b981;">Online · AI-powered</p>
+                <p style="font-size:13px;font-weight:600;" data-i18n>Peer Mentor</p>
+                <p style="font-size:11px;color:#10b981;" data-i18n>Online · AI-powered</p>
               </div>
             </div>
             <div id="chat-msgs" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:240px;min-height:120px;">
@@ -269,14 +276,14 @@
               </div>
             </div>
             <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
-              <input id="chat-in" type="text" placeholder="Ask your mentor…" class="input" style="font-size:13px;padding:8px 12px;"/>
+              <input id="chat-in" type="text" placeholder="Ask your mentor…" class="input" style="font-size:13px;padding:8px 12px;" data-i18n-placeholder="Ask your mentor…"/>
               <button onclick="sendChat()" class="btn btn-primary btn-sm" style="flex-shrink:0;padding:8px 14px;">→</button>
             </div>
           </div>
 
           <!-- Recommended courses -->
           <div class="card-flat" style="padding:18px;">
-            <h2 style="font-size:14px;font-weight:700;margin-bottom:14px;">Recommended for You</h2>
+            <h2 style="font-size:14px;font-weight:700;margin-bottom:14px;" data-i18n>Recommended for You</h2>
             <div style="display:flex;flex-direction:column;gap:12px;">
               {% set enrolled_ids = enrollments|map(attribute="course")|map(attribute="id")|list %}
               {% set ns = namespace(n=0) %}
@@ -385,6 +392,52 @@ function addBubble(box, role, html) {
 
 document.getElementById('chat-in').addEventListener('keypress', e => { if (e.key==='Enter') sendChat(); });
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Page Translation ──────────────────────────────────────────────────────────
+const USER_LANG = "{{ lang }}";
+let _pageLang = 'en';
+
+async function translatePage(lang) {
+  if (lang === _pageLang) return;
+  if (lang === 'en') { location.reload(); return; }
+  const nodes = [];
+  const placeholderNodes = [];
+  document.querySelectorAll('[data-i18n]').forEach(el => nodes.push(el));
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => placeholderNodes.push(el));
+  const allStrings = [
+    ...nodes.map(el => el.dataset.i18nOrig || el.textContent.trim()),
+    ...placeholderNodes.map(el => el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder') || '')
+  ];
+  if (!allStrings.length) return;
+  try {
+    const res = await fetch('/api/translate-page', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({strings: allStrings, lang})
+    });
+    const data = await res.json();
+    nodes.forEach((el, i) => {
+      el.dataset.i18nOrig = el.dataset.i18nOrig || el.textContent.trim();
+      el.textContent = data.translated[i];
+    });
+    placeholderNodes.forEach((el, i) => {
+      const idx = nodes.length + i;
+      el.dataset.i18nPlaceholderOrig = el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder');
+      el.setAttribute('placeholder', data.translated[idx]);
+    });
+    _pageLang = lang;
+  } catch(e) { console.warn('Translation failed', e); }
+}
+
+async function setAndTranslatePage(lang) {
+  // Save preference
+  await fetch('/api/set-language', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({language: lang})});
+  await translatePage(lang);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (USER_LANG && USER_LANG !== 'en') translatePage(USER_LANG);
+});
 
 // ── Mobile sidebar ────────────────────────────────────────────────────────────
 function openMobSidebar() {

@@ -54,14 +54,14 @@
         ("🔍","Browse Courses","/courses",False),
       ] %}
       <a href="{{ href }}" class="nav-link {% if active %}active{% endif %}">
-        <span>{{ icon }}</span><span>{{ label }}</span>
+        <span>{{ icon }}</span><span data-i18n>{{ label }}</span>
         {% if active %}<span style="width:6px;height:6px;border-radius:50%;background:var(--brand-light);margin-left:auto;"></span>{% endif %}
       </a>
       {% endfor %}
     </nav>
     <div class="sidebar-footer">
-      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
-      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+      <a href="/" class="nav-link"><span>🏠</span><span data-i18n>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span data-i18n>Logout</span></a>
     </div>
   </aside>
 
@@ -75,9 +75,9 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a href="/dashboard" class="nav-link" onclick="closeMobSidebar()"><span>🏠</span><span>Overview</span></a>
-      <a href="/my-courses" class="nav-link active" onclick="closeMobSidebar()"><span>📚</span><span>My Courses</span></a>
-      <a href="/progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span>Progress</span></a>
+      <a href="/dashboard" class="nav-link" onclick="closeMobSidebar()"><span>🏠</span><span data-i18n>Overview</span></a>
+      <a href="/my-courses" class="nav-link active" onclick="closeMobSidebar()"><span>📚</span><span data-i18n>My Courses</span></a>
+      <a href="/progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span data-i18n>Progress</span></a>
       <a href="/skill-paths" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
       <a href="/gamification" class="nav-link"><span>🏆</span><span>Achievements</span></a>
       <a href="/mentors" class="nav-link"><span>🤝</span><span>Mentors</span></a>
@@ -98,11 +98,18 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div>
-          <h1 style="font-size:16px;font-weight:700;">My Courses</h1>
+          <h1 style="font-size:16px;font-weight:700;" data-i18n>My Courses</h1>
           <p style="font-size:11px;color:var(--text-faint);margin-top:1px;">{{ enrollments|length }} enrolled course{% if enrollments|length != 1 %}s{% endif %}</p>
         </div>
       </div>
-      <a href="/courses" class="btn btn-primary btn-sm">+ Browse More</a>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="page-lang-select" onchange="setAndTranslatePage(this.value)" class="input" style="width:auto;font-size:12px;padding:5px 28px 5px 9px;" title="Change language">
+          {% for code, label in SUPPORTED_LANGUAGES.items() %}
+          <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <a href="/courses" class="btn btn-primary btn-sm" data-i18n>+ Browse More</a>
+      </div>
     </div>
 
     <div style="padding:28px;display:flex;flex-direction:column;gap:24px;">
@@ -121,7 +128,7 @@
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;">
           <span style="font-size:20px;">{{ icon }}</span>
           <p style="font-size:22px;font-weight:700;color:{{ color }};margin-top:8px;">{{ val }}</p>
-          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;">{{ label }}</p>
+          <p style="font-size:12px;color:var(--text-faint);margin-top:2px;" data-i18n>{{ label }}</p>
         </div>
         {% endfor %}
       </div>
@@ -129,12 +136,12 @@
       <!-- Filters + Search -->
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="filter-pill active" onclick="filterCourses('all',this)">All</button>
-          <button class="filter-pill" onclick="filterCourses('in-progress',this)">⚡ In Progress</button>
-          <button class="filter-pill" onclick="filterCourses('completed',this)">✅ Completed</button>
-          <button class="filter-pill" onclick="filterCourses('not-started',this)">🔖 Not Started</button>
+          <button class="filter-pill active" onclick="filterCourses('all',this)" data-i18n>All</button>
+          <button class="filter-pill" onclick="filterCourses('in-progress',this)" data-i18n>⚡ In Progress</button>
+          <button class="filter-pill" onclick="filterCourses('completed',this)" data-i18n>✅ Completed</button>
+          <button class="filter-pill" onclick="filterCourses('not-started',this)" data-i18n>🔖 Not Started</button>
         </div>
-        <input type="text" placeholder="Search my courses…" class="input" style="max-width:240px;font-size:13px;" oninput="searchCourses(this.value)"/>
+        <input type="text" placeholder="Search my courses…" class="input" style="max-width:240px;font-size:13px;" oninput="searchCourses(this.value)" data-i18n-placeholder="Search my courses…"/>
       </div>
 
       <!-- Course list -->
@@ -155,7 +162,7 @@
                 <h3 style="font-size:14px;font-weight:700;line-height:1.35;margin-bottom:3px;">{{ e.course.title }}</h3>
                 <p style="font-size:12px;color:var(--text-faint);">{{ e.course.instructor }} · {{ e.course.duration_hrs }}h · {{ e.course.get_modules()|length }} modules</p>
               </div>
-              <span class="badge {% if e.progress==100 %}badge-green{% elif e.progress>0 %}badge-amber{% else %}badge-blue{% endif %}" style="flex-shrink:0;">
+              <span class="badge {% if e.progress==100 %}badge-green{% elif e.progress>0 %}badge-amber{% else %}badge-blue{% endif %}" style="flex-shrink:0;" data-i18n>
                 {% if e.progress==100 %}Completed{% elif e.progress>0 %}In Progress{% else %}Not Started{% endif %}
               </span>
             </div>
@@ -172,8 +179,8 @@
                 <span style="font-size:11px;color:var(--text-faint);">Enrolled {{ e.enrolled_at.strftime("%b %d, %Y") }}</span>
               </div>
               <div style="display:flex;gap:8px;">
-                {% if e.progress == 100 %}<a href="/certificate/{{ e.course.id }}" class="btn btn-ghost btn-sm">🏅 Certificate</a>{% endif %}
-                <a href="/learn/{{ e.course.id }}" class="btn btn-primary btn-sm">{% if e.progress==100 %}Review{% elif e.progress>0 %}Continue{% else %}Start{% endif %} →</a>
+                {% if e.progress == 100 %}<a href="/certificate/{{ e.course.id }}" class="btn btn-ghost btn-sm" data-i18n>🏅 Certificate</a>{% endif %}
+                <a href="/learn/{{ e.course.id }}" class="btn btn-primary btn-sm" data-i18n>{% if e.progress==100 %}Review{% elif e.progress>0 %}Continue{% else %}Start{% endif %} →</a>
               </div>
             </div>
           </div>
@@ -182,15 +189,15 @@
       </div>
       <div id="empty-filter" style="display:none;text-align:center;padding:60px 0;">
         <p style="font-size:36px;margin-bottom:12px;">🔍</p>
-        <p style="font-weight:600;margin-bottom:6px;">No courses match this filter</p>
-        <p style="font-size:13px;color:var(--text-muted);">Try a different filter or search term.</p>
+        <p style="font-weight:600;margin-bottom:6px;" data-i18n>No courses match this filter</p>
+        <p style="font-size:13px;color:var(--text-muted);" data-i18n>Try a different filter or search term.</p>
       </div>
       {% else %}
       <div style="text-align:center;padding:80px 0;">
         <p style="font-size:48px;margin-bottom:16px;">📚</p>
-        <h3 style="font-size:20px;font-weight:700;margin-bottom:8px;">No courses yet</h3>
-        <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;">Start your learning journey by enrolling in a course.</p>
-        <a href="/courses" class="btn btn-primary">Browse Courses</a>
+        <h3 style="font-size:20px;font-weight:700;margin-bottom:8px;" data-i18n>No courses yet</h3>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;" data-i18n>Start your learning journey by enrolling in a course.</p>
+        <a href="/courses" class="btn btn-primary" data-i18n>Browse Courses</a>
       </div>
       {% endif %}
 
@@ -201,6 +208,50 @@
 
 {% block extra_scripts %}
 <script>
+const USER_LANG = "{{ lang }}";
+let _pageLang = 'en';
+
+async function translatePage(lang) {
+  if (lang === _pageLang) return;
+  if (lang === 'en') { location.reload(); return; }
+  const nodes = [];
+  const placeholderNodes = [];
+  document.querySelectorAll('[data-i18n]').forEach(el => nodes.push(el));
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => placeholderNodes.push(el));
+  const allStrings = [
+    ...nodes.map(el => el.dataset.i18nOrig || el.textContent.trim()),
+    ...placeholderNodes.map(el => el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder') || '')
+  ];
+  if (!allStrings.length) return;
+  try {
+    const res = await fetch('/api/translate-page', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({strings: allStrings, lang})
+    });
+    const data = await res.json();
+    nodes.forEach((el, i) => {
+      el.dataset.i18nOrig = el.dataset.i18nOrig || el.textContent.trim();
+      el.textContent = data.translated[i];
+    });
+    placeholderNodes.forEach((el, i) => {
+      const idx = nodes.length + i;
+      el.dataset.i18nPlaceholderOrig = el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder');
+      el.setAttribute('placeholder', data.translated[idx]);
+    });
+    _pageLang = lang;
+  } catch(e) { console.warn('Translation failed', e); }
+}
+
+async function setAndTranslatePage(lang) {
+  await fetch('/api/set-language', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({language: lang})});
+  await translatePage(lang);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (USER_LANG && USER_LANG !== 'en') translatePage(USER_LANG);
+});
+
 function openMobSidebar() {
   document.getElementById('mob-sidebar').classList.add('open');
   document.getElementById('mob-overlay').classList.add('open');

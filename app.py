@@ -43,10 +43,8 @@ def inject_lang():
     """Make current language and i18n helper available in every template."""
     from flask_login import current_user as cu
     lang = "en"
-    if cu.is_authenticated and cu.language in I18N.get("progress", {}):
+    if cu.is_authenticated and cu.language and cu.language in SUPPORTED_LANGUAGES:
         lang = cu.language
-    elif cu.is_authenticated and cu.language:
-        lang = cu.language if cu.language in ("en","hi","kn","ta","te") else "en"
     def t(key):
         return I18N.get(key, {}).get(lang, I18N.get(key, {}).get("en", key))
     return {"lang": lang, "t": t, "SUPPORTED_LANGUAGES": SUPPORTED_LANGUAGES}
@@ -2193,6 +2191,31 @@ def translate_text():
         return jsonify({"translated": d.get("responseData", {}).get("translatedText", text), "lang": lang})
     except Exception:
         return jsonify({"translated": text, "lang": lang})
+
+
+@app.route("/api/translate-page", methods=["POST"])
+@login_required
+def translate_page():
+    """Batch-translate a list of UI strings to the user's preferred language."""
+    data = request.get_json(silent=True) or {}
+    strings = data.get("strings", [])   # list of plain-text strings
+    lang = data.get("lang") or current_user.language or "en"
+    if lang == "en" or not strings or lang not in SUPPORTED_LANGUAGES:
+        return jsonify({"translated": strings, "lang": lang})
+
+    def _translate(text):
+        if not text:
+            return text
+        try:
+            params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
+            url = f"https://api.mymemory.translated.net/get?{params}"
+            with urllib.request.urlopen(url, timeout=6) as resp:
+                d = json.loads(resp.read().decode())
+            return d.get("responseData", {}).get("translatedText", text)
+        except Exception:
+            return text
+
+    return jsonify({"translated": [_translate(s) for s in strings], "lang": lang})
 
 
 @app.route("/api/translate-quiz/<int:course_id>")

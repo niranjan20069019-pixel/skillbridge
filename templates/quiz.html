@@ -27,8 +27,7 @@
       <p style="font-size:13px;color:var(--text-muted);">{{ questions|length }} questions · Pass mark {{ quiz.pass_pct }}%</p>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-      <!-- Language selector -->
-      {% if current_user.language and current_user.language != 'en' %}
+      <!-- Language selector (always visible) -->
       <div style="display:flex;align-items:center;gap:7px;">
         <span style="font-size:12px;color:var(--text-faint);">🌐</span>
         <select id="quiz-lang-select" onchange="translateQuiz(this.value)" class="input" style="width:auto;font-size:12px;padding:5px 28px 5px 9px;">
@@ -37,7 +36,6 @@
           {% endfor %}
         </select>
       </div>
-      {% endif %}
       <!-- Timer -->
       <div class="card-flat" style="padding:12px 18px;text-align:center;min-width:90px;" id="timer-box">
         <p style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">Time Left</p>
