@@ -25,8 +25,7 @@ class Config:
     }
     LOG_LEVEL = "INFO"
     LOG_FILE  = os.path.join(BASE_DIR, "logs", "skillbridge.log")
-    YOUTUBE_API_KEY          = os.environ.get("YOUTUBE_API_KEY", "")
-    GOOGLE_TRANSLATE_API_KEY = os.environ.get("GOOGLE_TRANSLATE_API_KEY", "")
+    YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
 
 
 class DevelopmentConfig(Config):
