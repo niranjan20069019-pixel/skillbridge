@@ -4,7 +4,6 @@ import json
 import random
 import urllib.request
 import urllib.parse
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from flask import (
     Flask, render_template, request, redirect,
@@ -2161,163 +2160,88 @@ def completed_modules(course_id):
     return jsonify({"completed": [r.module_idx for r in rows]})
 
 
+# ── Google Translate helper ────────────────────────────────────────────────────
+def _google_translate(texts, target_lang):
+    """
+    Translate a list of strings to target_lang using Google Cloud Translation API v2.
+    Returns list of translated strings (same order). Falls back to originals on error.
+    Docs: https://cloud.google.com/translate/docs/reference/rest/v2/translate
+    """
+    api_key = app.config.get("GOOGLE_TRANSLATE_API_KEY", "")
+    if not api_key or not texts or target_lang == "en":
+        return texts
+    try:
+        body = json.dumps({"q": texts, "target": target_lang, "format": "text"}).encode()
+        url  = f"https://translation.googleapis.com/language/translate/v2?key={api_key}"
+        req  = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        return [t["translatedText"] for t in data["data"]["translations"]]
+    except Exception as exc:
+        app.logger.warning("google_translate: failed target=%s: %s", target_lang, exc)
+        return texts
+
+
 @app.route("/api/translate-notes/<int:course_id>")
 @login_required
 def translate_notes(course_id):
-    """Return course notes translated to the user's preferred language via MyMemory free API."""
     course = Course.query.get_or_404(course_id)
     notes  = COURSE_NOTES.get(course.title, "")
     lang   = request.args.get("lang") or current_user.language or "en"
-
     if lang == "en" or not notes:
         return jsonify({"notes": notes, "lang": lang, "translated": False})
-
-    # Split into chunks ≤ 500 chars (MyMemory free limit per request)
-    lines   = notes.split("\n")
-    chunks  = []
-    current = ""
-    for line in lines:
-        if len(current) + len(line) + 1 > 480:
-            if current:
-                chunks.append(current)
-            current = line
-        else:
-            current = (current + "\n" + line) if current else line
-    if current:
-        chunks.append(current)
-
-    translated_chunks = []
-    lang_pair = f"en|{lang}"
-    for chunk in chunks:
-        try:
-            params = urllib.parse.urlencode({"q": chunk, "langpair": lang_pair})
-            url    = f"https://api.mymemory.translated.net/get?{params}"
-            with urllib.request.urlopen(url, timeout=6) as resp:
-                data = json.loads(resp.read().decode())
-            translated_chunks.append(
-                data.get("responseData", {}).get("translatedText", chunk)
-            )
-        except Exception:
-            translated_chunks.append(chunk)  # fallback: keep original
-
-    return jsonify({"notes": "\n".join(translated_chunks), "lang": lang, "translated": True})
+    translated = _google_translate([notes], lang)
+    return jsonify({"notes": translated[0], "lang": lang, "translated": translated[0] != notes})
 
 
 @app.route("/api/translate", methods=["POST"])
 @login_required
 def translate_text():
-    """Translate arbitrary text via MyMemory free API."""
     data = request.get_json(silent=True) or {}
     text = data.get("text", "").strip()
     lang = data.get("target_lang", "en")
     if not text or lang == "en":
         return jsonify({"translated": text, "lang": lang})
-    try:
-        params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
-        url = f"https://api.mymemory.translated.net/get?{params}"
-        with urllib.request.urlopen(url, timeout=6) as resp:
-            d = json.loads(resp.read().decode())
-        return jsonify({"translated": d.get("responseData", {}).get("translatedText", text), "lang": lang})
-    except Exception:
-        return jsonify({"translated": text, "lang": lang})
+    result = _google_translate([text], lang)
+    return jsonify({"translated": result[0], "lang": lang})
 
 
 @app.route("/api/translate-page", methods=["POST"])
 @login_required
 def translate_page():
-    """Batch-translate a list of UI strings to the user's preferred language."""
-    data = request.get_json(silent=True) or {}
-    strings = data.get("strings", [])   # list of plain-text strings
-    lang = data.get("lang") or current_user.language or "en"
+    data    = request.get_json(silent=True) or {}
+    strings = data.get("strings", [])
+    lang    = data.get("lang") or current_user.language or "en"
     if lang == "en" or not strings or lang not in SUPPORTED_LANGUAGES:
         return jsonify({"translated": strings, "lang": lang})
-
-    def _translate(text):
-        if not text:
-            return text
-        try:
-            params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
-            url = f"https://api.mymemory.translated.net/get?{params}"
-            with urllib.request.urlopen(url, timeout=6) as resp:
-                d = json.loads(resp.read().decode())
-            return d.get("responseData", {}).get("translatedText", text)
-        except Exception:
-            return text
-
-    return jsonify({"translated": [_translate(s) for s in strings], "lang": lang})
+    return jsonify({"translated": _google_translate(strings, lang), "lang": lang})
 
 
 @app.route("/api/translate-quiz/<int:course_id>")
 @login_required
 def translate_quiz(course_id):
-    """Return quiz questions translated to the user's preferred language."""
-    quiz = Quiz.query.filter_by(course_id=course_id).first_or_404()
-    lang = request.args.get("lang") or current_user.language or "en"
+    quiz      = Quiz.query.filter_by(course_id=course_id).first_or_404()
+    lang      = request.args.get("lang") or current_user.language or "en"
     questions = quiz.questions.all()
 
-    if lang == "en":
-        return jsonify({"questions": [
-            {"id": q.id, "question": q.question,
-             "option_a": q.option_a, "option_b": q.option_b,
-             "option_c": q.option_c, "option_d": q.option_d}
-            for q in questions
-        ], "translated": False})
-
-    def translate(text):
-        """Translate a single text string via MyMemory. Returns (translated_text, success)."""
-        if not text:
-            return text, True
-        try:
-            params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
-            url = f"https://api.mymemory.translated.net/get?{params}"
-            with urllib.request.urlopen(url, timeout=8) as resp:
-                d = json.loads(resp.read().decode())
-            # Check for API-level errors (rate limit returns responseStatus 429 or 403)
-            status = d.get("responseStatus", 200)
-            if status not in (200, "200"):
-                app.logger.warning("translate_quiz: MyMemory status=%s lang=%s course=%s", status, lang, course_id)
-                return text, False
-            result = d.get("responseData", {}).get("translatedText", "")
-            # MyMemory returns the original text when it can't translate
-            if not result or result.strip().upper() == text.strip().upper():
-                return text, False
-            return result, True
-        except Exception as exc:
-            app.logger.warning("translate_quiz: exception lang=%s course=%s: %s", lang, course_id, exc)
-            return text, False
-
-    # Collect all fields to translate, preserving order
     field_order = ["question", "option_a", "option_b", "option_c", "option_d"]
-    all_texts = [getattr(q, f) or "" for q in questions for f in field_order]
+    orig = [{"id": q.id, **{f: getattr(q, f) for f in field_order}} for q in questions]
 
-    # Translate in parallel — reduces wall time from O(N*5*timeout) to O(timeout)
-    translated_texts = [None] * len(all_texts)
-    any_success = False
-    with ThreadPoolExecutor(max_workers=min(len(all_texts), 10)) as pool:
-        futures = {pool.submit(translate, text): i for i, text in enumerate(all_texts)}
-        for future in as_completed(futures):
-            i = futures[future]
-            result, ok = future.result()
-            translated_texts[i] = result
-            if ok and all_texts[i]:
-                any_success = True
+    if lang == "en":
+        return jsonify({"questions": orig, "translated": False})
 
-    if not any_success:
-        app.logger.warning("translate_quiz: all translations failed lang=%s course=%s", lang, course_id)
-        return jsonify({"questions": [
-            {"id": q.id, "question": q.question,
-             "option_a": q.option_a, "option_b": q.option_b,
-             "option_c": q.option_c, "option_d": q.option_d}
-            for q in questions
-        ], "translated": False, "error": "Translation service unavailable"})
+    all_texts    = [getattr(q, f) or "" for q in questions for f in field_order]
+    translations = _google_translate(all_texts, lang)
 
-    translated = []
-    idx = 0
+    if translations == all_texts:          # helper returned originals — API failed
+        app.logger.warning("translate_quiz: no translation returned lang=%s course=%s", lang, course_id)
+        return jsonify({"questions": orig, "translated": False, "error": "Translation service unavailable"})
+
+    translated, idx = [], 0
     for q in questions:
         entry = {"id": q.id}
-        for field in field_order:
-            entry[field] = translated_texts[idx]
-            idx += 1
+        for f in field_order:
+            entry[f] = translations[idx]; idx += 1
         translated.append(entry)
     return jsonify({"questions": translated, "translated": True, "lang": lang})
 
