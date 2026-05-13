@@ -2137,7 +2137,7 @@ def completed_modules(course_id):
 @app.route("/api/translate-notes/<int:course_id>")
 @login_required
 def translate_notes(course_id):
-    """Return course notes translated to the user's preferred language via MyMemory free API."""
+    """Return course notes translated to the user's preferred language via Google Translate."""
     course = Course.query.get_or_404(course_id)
     notes  = COURSE_NOTES.get(course.title, "")
     lang   = request.args.get("lang") or current_user.language or "en"
@@ -2160,18 +2160,15 @@ def translate_notes(course_id):
         chunks.append(current)
 
     translated_chunks = []
-    lang_pair = f"en|{lang}"
     for chunk in chunks:
         try:
-            params = urllib.parse.urlencode({"q": chunk, "langpair": lang_pair})
-            url    = f"https://api.mymemory.translated.net/get?{params}"
-            with urllib.request.urlopen(url, timeout=6) as resp:
+            params = urllib.parse.urlencode({"client": "gtx", "sl": "en", "tl": lang, "dt": "t", "q": chunk})
+            url = f"https://translate.googleapis.com/translate_a/single?{params}"
+            with urllib.request.urlopen(url, timeout=10) as resp:
                 data = json.loads(resp.read().decode())
-            translated_chunks.append(
-                data.get("responseData", {}).get("translatedText", chunk)
-            )
+            translated_chunks.append("".join(part[0] for part in data[0] if part[0]))
         except Exception:
-            translated_chunks.append(chunk)  # fallback: keep original
+            translated_chunks.append(chunk)
 
     return jsonify({"notes": "\n".join(translated_chunks), "lang": lang, "translated": True})
 
@@ -2179,18 +2176,18 @@ def translate_notes(course_id):
 @app.route("/api/translate", methods=["POST"])
 @login_required
 def translate_text():
-    """Translate arbitrary text via MyMemory free API."""
+    """Translate arbitrary text via Google Translate."""
     data = request.get_json(silent=True) or {}
     text = data.get("text", "").strip()
     lang = data.get("target_lang", "en")
     if not text or lang == "en":
         return jsonify({"translated": text, "lang": lang})
     try:
-        params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
-        url = f"https://api.mymemory.translated.net/get?{params}"
-        with urllib.request.urlopen(url, timeout=6) as resp:
+        params = urllib.parse.urlencode({"client": "gtx", "sl": "en", "tl": lang, "dt": "t", "q": text})
+        url = f"https://translate.googleapis.com/translate_a/single?{params}"
+        with urllib.request.urlopen(url, timeout=10) as resp:
             d = json.loads(resp.read().decode())
-        return jsonify({"translated": d.get("responseData", {}).get("translatedText", text), "lang": lang})
+        return jsonify({"translated": "".join(part[0] for part in d[0] if part[0]), "lang": lang})
     except Exception:
         return jsonify({"translated": text, "lang": lang})
 
@@ -2215,11 +2212,11 @@ def translate_quiz(course_id):
         if not text:
             return text
         try:
-            params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
-            url = f"https://api.mymemory.translated.net/get?{params}"
-            with urllib.request.urlopen(url, timeout=5) as resp:
+            params = urllib.parse.urlencode({"client": "gtx", "sl": "en", "tl": lang, "dt": "t", "q": text})
+            url = f"https://translate.googleapis.com/translate_a/single?{params}"
+            with urllib.request.urlopen(url, timeout=10) as resp:
                 d = json.loads(resp.read().decode())
-            return d.get("responseData", {}).get("translatedText", text)
+            return "".join(part[0] for part in d[0] if part[0])
         except Exception:
             return text
 
