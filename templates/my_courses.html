@@ -10,6 +10,20 @@
   .course-row:hover { border-color:var(--border-md); }
   .filter-pill { padding:5px 14px; border-radius:99px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border-md); background:transparent; color:var(--text-muted); transition:all var(--transition); }
   .filter-pill.active, .filter-pill:hover { background:var(--brand-dim); color:#93c5fd; border-color:var(--brand-border); }
+  .stat-value { font-size:22px; font-weight:700; margin-top:8px; }
+  .stat-brand { color:var(--brand-light); }
+  .stat-green { color:#10b981; }
+  .stat-amber { color:#f59e0b; }
+  .stat-muted { color:var(--text-muted); }
+  .progress-track { height:6px; border-radius:999px; background:var(--border); overflow:hidden; }
+  .progress-fill { height:100%; border-radius:999px; transition:width 0.3s ease; }
+  .progress-fill-brand { background:var(--brand-light); }
+  .progress-fill-amber { background:#f59e0b; }
+  .progress-fill-green { background:#10b981; }
+  .progress-value { font-size:12px; font-weight:700; flex-shrink:0; }
+  .progress-text-brand { color:var(--brand-light); }
+  .progress-text-amber { color:#f59e0b; }
+  .progress-text-green { color:#10b981; }
   .dash-hamburger { display:none; }
   @media (max-width:768px) {
     .dash-hamburger { display:flex; }
@@ -119,15 +133,15 @@
       {% set in_progress = enrollments|selectattr("progress","greaterthan",0)|rejectattr("progress","equalto",100)|list|length %}
       {% set not_started = enrollments|selectattr("progress","equalto",0)|list|length %}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
-        {% for icon, label, val, color in [
-          ("📚","Total Enrolled", enrollments|length, "var(--brand-light)"),
-          ("✅","Completed", completed, "#10b981"),
-          ("⚡","In Progress", in_progress, "#f59e0b"),
-          ("🔖","Not Started", not_started, "var(--text-muted)"),
+        {% for icon, label, val, cls in [
+          ("📚","Total Enrolled", enrollments|length, "stat-brand"),
+          ("✅","Completed", completed, "stat-green"),
+          ("⚡","In Progress", in_progress, "stat-amber"),
+          ("🔖","Not Started", not_started, "stat-muted"),
         ] %}
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;">
           <span style="font-size:20px;">{{ icon }}</span>
-          <p style="font-size:22px;font-weight:700;color:{{ color }};margin-top:8px;">{{ val }}</p>
+          <p class="stat-value {{ cls }}">{{ val }}</p>
           <p style="font-size:12px;color:var(--text-faint);margin-top:2px;" data-i18n>{{ label }}</p>
         </div>
         {% endfor %}
@@ -168,9 +182,9 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
               <div class="progress-track" style="flex:1;">
-                <div class="progress-fill" style="width:{{ e.progress }}%;background:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};"></div>
+                <div class="progress-fill {% if e.progress==100 %}progress-fill-green{% elif e.progress>50 %}progress-fill-brand{% else %}progress-fill-amber{% endif %}" data-progress="{{ e.progress }}"></div>
               </div>
-              <span style="font-size:12px;font-weight:700;flex-shrink:0;color:{% if e.progress==100 %}#10b981{% elif e.progress>50 %}var(--brand-light){% else %}#f59e0b{% endif %};">{{ e.progress }}%</span>
+              <span class="progress-value {% if e.progress==100 %}progress-text-green{% elif e.progress>50 %}progress-text-brand{% else %}progress-text-amber{% endif %}">{{ e.progress }}%</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
               <div style="display:flex;gap:6px;align-items:center;">
@@ -250,6 +264,9 @@ async function setAndTranslatePage(lang) {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (USER_LANG && USER_LANG !== 'en') translatePage(USER_LANG);
+  document.querySelectorAll('.progress-fill[data-progress]').forEach(el => {
+    el.style.width = `${el.dataset.progress}%`;
+  });
 });
 
 function openMobSidebar() {

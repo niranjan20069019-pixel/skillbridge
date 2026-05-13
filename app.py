@@ -4,6 +4,7 @@ import json
 import random
 import urllib.request
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from flask import (
     Flask, render_template, request, redirect,
@@ -1987,6 +1988,34 @@ def courses():
                            selected_category=category, search_q=q)
 
 
+@app.route("/my-courses")
+@login_required
+def my_courses():
+    enrollments = Enrollment.query.filter_by(user_id=current_user.id)\
+                    .order_by(Enrollment.enrolled_at.desc()).all()
+    return render_template("my_courses.html", enrollments=enrollments)
+
+
+@app.route("/progress")
+@login_required
+def progress():
+    enrollments       = current_user.enrollments.all()
+    profile           = get_or_create_profile(current_user.id)
+    my_badges         = UserBadge.query.filter_by(user_id=current_user.id).all()
+    completed_modules = CompletedModule.query.filter_by(user_id=current_user.id).count()
+    level             = profile.xp // 500 + 1
+    xp_in_level       = profile.xp % 500
+    total_progress    = int(sum(e.progress for e in enrollments) / len(enrollments)) if enrollments else 0
+    now               = datetime.utcnow()
+    return render_template("progress.html",
+        enrollments=enrollments, profile=profile,
+        my_badges=my_badges, completed_modules=completed_modules,
+        level=level, xp_in_level=xp_in_level,
+        total_progress=total_progress, now=now,
+        timedelta=timedelta,
+    )
+
+
 @app.route("/enroll/<int:course_id>", methods=["POST"])
 @login_required
 def enroll(course_id):
@@ -2235,27 +2264,61 @@ def translate_quiz(course_id):
         ], "translated": False})
 
     def translate(text):
+        """Translate a single text string via MyMemory. Returns (translated_text, success)."""
         if not text:
-            return text
+            return text, True
         try:
             params = urllib.parse.urlencode({"q": text[:500], "langpair": f"en|{lang}"})
             url = f"https://api.mymemory.translated.net/get?{params}"
-            with urllib.request.urlopen(url, timeout=5) as resp:
+            with urllib.request.urlopen(url, timeout=8) as resp:
                 d = json.loads(resp.read().decode())
-            return d.get("responseData", {}).get("translatedText", text)
-        except Exception:
-            return text
+            # Check for API-level errors (rate limit returns responseStatus 429 or 403)
+            status = d.get("responseStatus", 200)
+            if status not in (200, "200"):
+                app.logger.warning("translate_quiz: MyMemory status=%s lang=%s course=%s", status, lang, course_id)
+                return text, False
+            result = d.get("responseData", {}).get("translatedText", "")
+            # MyMemory returns the original text when it can't translate
+            if not result or result.strip().upper() == text.strip().upper():
+                return text, False
+            return result, True
+        except Exception as exc:
+            app.logger.warning("translate_quiz: exception lang=%s course=%s: %s", lang, course_id, exc)
+            return text, False
+
+    # Collect all fields to translate, preserving order
+    field_order = ["question", "option_a", "option_b", "option_c", "option_d"]
+    all_texts = [getattr(q, f) or "" for q in questions for f in field_order]
+
+    # Translate in parallel — reduces wall time from O(N*5*timeout) to O(timeout)
+    translated_texts = [None] * len(all_texts)
+    any_success = False
+    with ThreadPoolExecutor(max_workers=min(len(all_texts), 10)) as pool:
+        futures = {pool.submit(translate, text): i for i, text in enumerate(all_texts)}
+        for future in as_completed(futures):
+            i = futures[future]
+            result, ok = future.result()
+            translated_texts[i] = result
+            if ok and all_texts[i]:
+                any_success = True
+
+    if not any_success:
+        app.logger.warning("translate_quiz: all translations failed lang=%s course=%s", lang, course_id)
+        return jsonify({"questions": [
+            {"id": q.id, "question": q.question,
+             "option_a": q.option_a, "option_b": q.option_b,
+             "option_c": q.option_c, "option_d": q.option_d}
+            for q in questions
+        ], "translated": False, "error": "Translation service unavailable"})
 
     translated = []
+    idx = 0
     for q in questions:
-        translated.append({
-            "id": q.id,
-            "question": translate(q.question),
-            "option_a": translate(q.option_a),
-            "option_b": translate(q.option_b),
-            "option_c": translate(q.option_c),
-            "option_d": translate(q.option_d),
-        })
+        entry = {"id": q.id}
+        for field in field_order:
+            entry[field] = translated_texts[idx]
+            idx += 1
+        translated.append(entry)
     return jsonify({"questions": translated, "translated": True, "lang": lang})
 
 

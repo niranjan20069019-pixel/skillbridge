@@ -109,6 +109,12 @@ const TOTAL = {{ questions|length }};
 const COURSE_ID = {{ course.id }};
 const USER_LANG = "{{ current_user.language or 'en' }}";
 
+// Sync language select before first paint to avoid flash
+(function(){
+  const s = localStorage.getItem('sb_quiz_lang_' + {{ course.id }});
+  if (s && s !== 'en') { const el = document.getElementById('quiz-lang-select'); if (el) el.value = s; }
+})();
+
 let timeLeft = {{ quiz.time_limit }};
 const timerEl = document.getElementById('timer');
 const timerBox = document.getElementById('timer-box');
@@ -138,45 +144,108 @@ document.getElementById('quiz-form').addEventListener('submit', e => {
 });
 
 // ── Quiz Translation ──────────────────────────────────────────────────────────
+const _cacheKey = `sb_quiz_${COURSE_ID}`;
+const _langKey  = `sb_quiz_lang_${COURSE_ID}`;
 let _translatedLang = 'en';
+let _translating = false;
+
+function _applyQuestions(questions) {
+  questions.forEach(q => {
+    const card = document.querySelector(`[data-qid="${q.id}"]`);
+    if (!card) return;
+    card.querySelector('.q-text').textContent = q.question;
+    card.querySelectorAll('.opt-text').forEach((el, i) => {
+      el.textContent = [q.option_a, q.option_b, q.option_c, q.option_d][i] ?? el.textContent;
+    });
+  });
+}
+
+function _showStatus(text, hide = true) {
+  const status = document.getElementById('translate-status');
+  document.getElementById('translate-msg').textContent = text;
+  status.style.display = 'block';
+  if (hide) setTimeout(() => { status.style.display = 'none'; }, 2500);
+}
 
 async function translateQuiz(lang) {
-  if (lang === _translatedLang) return;
-  const status = document.getElementById('translate-status');
-  const msg    = document.getElementById('translate-msg');
+  if (lang === _translatedLang || _translating) return;
+  const select = document.getElementById('quiz-lang-select');
+
   if (lang === 'en') {
-    // Reload page to restore original questions
+    const cached = sessionStorage.getItem(_cacheKey + '_en');
+    if (cached) {
+      _applyQuestions(JSON.parse(cached));
+      _translatedLang = 'en';
+      localStorage.setItem(_langKey, 'en');
+      return;
+    }
     location.reload();
     return;
   }
-  status.style.display = 'block';
-  msg.textContent = 'Translating questions…';
-  try {
-    const res  = await fetch(`/api/translate-quiz/${COURSE_ID}?lang=${lang}`);
-    const data = await res.json();
-    if (!data.translated) { status.style.display = 'none'; return; }
-    data.questions.forEach(q => {
-      const card = document.querySelector(`[data-qid="${q.id}"]`);
-      if (!card) return;
-      card.querySelector('.q-text').textContent = q.question;
-      const opts = card.querySelectorAll('.opt-text');
-      [q.option_a, q.option_b, q.option_c, q.option_d].forEach((txt, i) => {
-        if (opts[i]) opts[i].textContent = txt;
-      });
-    });
+
+  const cacheKey = `${_cacheKey}_${lang}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    _applyQuestions(JSON.parse(cached));
     _translatedLang = lang;
-    msg.textContent = `✓ Questions translated to ${lang.toUpperCase()}`;
-    setTimeout(() => { status.style.display = 'none'; }, 2500);
-  } catch {
-    msg.textContent = 'Translation failed. Showing original.';
-    setTimeout(() => { status.style.display = 'none'; }, 2000);
+    localStorage.setItem(_langKey, lang);
+    _showStatus(`✓ Questions translated to ${lang.toUpperCase()}`);
+    return;
+  }
+
+  _translating = true;
+  _showStatus('Translating questions…', false);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const res = await fetch(`/api/translate-quiz/${COURSE_ID}?lang=${lang}`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.translated) {
+      console.warn(`[quiz-translate] translated=false lang=${lang}:`, data.error || '');
+      if (select) select.value = _translatedLang;
+      _showStatus('Translation unavailable. Showing original.');
+      return;
+    }
+    if (!sessionStorage.getItem(_cacheKey + '_en')) {
+      const originals = [...document.querySelectorAll('[data-qid]')].map(card => ({
+        id: +card.dataset.qid,
+        question: card.querySelector('.q-text').textContent,
+        option_a: card.querySelectorAll('.opt-text')[0]?.textContent,
+        option_b: card.querySelectorAll('.opt-text')[1]?.textContent,
+        option_c: card.querySelectorAll('.opt-text')[2]?.textContent,
+        option_d: card.querySelectorAll('.opt-text')[3]?.textContent,
+      }));
+      sessionStorage.setItem(_cacheKey + '_en', JSON.stringify(originals));
+    }
+    sessionStorage.setItem(cacheKey, JSON.stringify(data.questions));
+    _applyQuestions(data.questions);
+    _translatedLang = lang;
+    localStorage.setItem(_langKey, lang);
+    _showStatus(`✓ Questions translated to ${lang.toUpperCase()}`);
+  } catch (err) {
+    clearTimeout(timer);
+    console.warn(`[quiz-translate] lang=${lang}: ${err.name === 'AbortError' ? 'timeout' : err.message}`);
+    if (select) select.value = _translatedLang;
+    _showStatus('Translation failed. Showing original.');
+  } finally {
+    _translating = false;
+    // Clear stuck "Translating…" banner if fetch was aborted mid-flight
+    const msgEl = document.getElementById('translate-msg');
+    if (msgEl && msgEl.textContent === 'Translating questions…')
+      document.getElementById('translate-status').style.display = 'none';
   }
 }
 
-// Auto-translate if user's language is not English
 document.addEventListener('DOMContentLoaded', () => {
-  if (USER_LANG && USER_LANG !== 'en') {
-    translateQuiz(USER_LANG);
+  const persistedLang = localStorage.getItem(_langKey) || USER_LANG;
+  const select = document.getElementById('quiz-lang-select');
+  if (persistedLang && persistedLang !== 'en') {
+    if (select) select.value = persistedLang;
+    translateQuiz(persistedLang);
   }
 });
 </script>
