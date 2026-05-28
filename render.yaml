@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: skillbridge-api
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      flask db upgrade
+    startCommand: "gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT run:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12
+      - key: FLASK_APP
+        value: run.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillbridge-db
+          property: connectionString
+
+  - type: web
+    name: skillbridge-node-api
+    env: node
+    plan: free
+    buildCommand: "cd backend && npm install"
+    startCommand: "cd backend && npm start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+
+  - type: database
+    name: skillbridge-db
+    dbName: skillbridge
+    plan: free
+    postgresVersion: 15
