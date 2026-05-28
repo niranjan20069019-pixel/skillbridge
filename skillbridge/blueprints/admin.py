@@ -1,4 +1,4 @@
-"""blueprints/admin.py — Admin dashboard routes."""
+"""blueprints/admin.py — Admin dashboard with RBAC (admin + superadmin)."""
 import os
 from datetime import datetime
 from functools import wraps
@@ -12,37 +12,51 @@ from ..uploads import save_upload
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-ADMIN_EMAILS = {os.environ.get("ADMIN_EMAIL", "admin@skillbridge.com")}
-
 
 def admin_required(f):
+    """Allow admin and superadmin roles."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.email not in ADMIN_EMAILS:
+        if not current_user.is_authenticated or current_user.role not in ("admin", "superadmin"):
             abort(403)
         return f(*args, **kwargs)
     return decorated
 
+
+def superadmin_required(f):
+    """Allow only superadmin role."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != "superadmin":
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @bp.route("")
 @login_required
 @admin_required
 def dashboard():
     stats = {
-        "users":         User.query.count(),
-        "courses":       Course.query.count(),
-        "enrollments":   Enrollment.query.count(),
-        "quizzes":       Quiz.query.count(),
-        "mentors":       MentorProfile.query.filter_by(approved=True).count(),
+        "users":           User.query.count(),
+        "courses":         Course.query.count(),
+        "enrollments":     Enrollment.query.count(),
+        "quizzes":         Quiz.query.count(),
+        "mentors":         MentorProfile.query.filter_by(approved=True).count(),
         "pending_mentors": MentorProfile.query.filter_by(approved=False).count(),
-        "doubts":        DoubtRequest.query.count(),
-        "notes":         CourseNote.query.count(),
-        "certificates":  Certificate.query.count(),
+        "doubts":          DoubtRequest.query.count(),
+        "notes":           CourseNote.query.count(),
+        "certificates":    Certificate.query.count(),
     }
-    top_courses = (db.session.query(Course, db.func.count(Enrollment.id).label("cnt"))
-                   .join(Enrollment).group_by(Course.id)
-                   .order_by(text("cnt desc")).limit(5).all())
-    return render_template("admin.html",
+    top_courses = (
+        db.session.query(Course, db.func.count(Enrollment.id).label("cnt"))
+        .join(Enrollment).group_by(Course.id)
+        .order_by(text("cnt desc")).limit(5).all()
+    )
+    return render_template(
+        "admin.html",
         stats=stats,
         recent_users=User.query.order_by(User.joined_at.desc()).limit(10).all(),
         top_courses=top_courses,
@@ -52,41 +66,60 @@ def dashboard():
         all_users=User.query.order_by(User.joined_at.desc()).all(),
         all_quizzes=Quiz.query.all(),
         all_notes=CourseNote.query.order_by(CourseNote.uploaded_at.desc()).all(),
+        is_superadmin=(current_user.role == "superadmin"),
     )
 
 
-@bp.route("/mentor/<int:mentor_id>/approve", methods=["POST"])
+# ── User Management (superadmin only) ────────────────────────────────────────
+
+@bp.route("/user/<int:user_id>/role", methods=["POST"])
 @login_required
-@admin_required
-def approve_mentor(mentor_id):
-    m = MentorProfile.query.get_or_404(mentor_id)
-    m.approved = True
+@superadmin_required
+def set_user_role(user_id):
+    u = User.query.get_or_404(user_id)
+    new_role = request.form.get("role", "user")
+    if new_role not in ("user", "mentor", "admin", "superadmin"):
+        flash("Invalid role.", "danger")
+        return redirect(url_for("admin.dashboard") + "#users")
+    # Prevent demoting yourself
+    if u.id == current_user.id and new_role != "superadmin":
+        flash("Cannot change your own superadmin role.", "warning")
+        return redirect(url_for("admin.dashboard") + "#users")
+    u.role = new_role
     db.session.commit()
-    flash("Mentor approved.", "success")
-    return redirect(url_for("admin.dashboard"))
+    flash(f"Role updated to '{new_role}' for {u.name}.", "success")
+    return redirect(url_for("admin.dashboard") + "#users")
 
 
-@bp.route("/mentor/<int:mentor_id>/reject", methods=["POST"])
+@bp.route("/user/<int:user_id>/toggle-active", methods=["POST"])
 @login_required
-@admin_required
-def reject_mentor(mentor_id):
-    m = MentorProfile.query.get_or_404(mentor_id)
-    db.session.delete(m)
+@superadmin_required
+def toggle_user_active(user_id):
+    u = User.query.get_or_404(user_id)
+    if u.id == current_user.id:
+        flash("Cannot deactivate yourself.", "warning")
+        return redirect(url_for("admin.dashboard") + "#users")
+    u.is_active = not u.is_active
     db.session.commit()
-    flash("Mentor application rejected.", "info")
-    return redirect(url_for("admin.dashboard"))
+    flash(f"User {'activated' if u.is_active else 'deactivated'}.", "success")
+    return redirect(url_for("admin.dashboard") + "#users")
 
 
 @bp.route("/user/<int:user_id>/delete", methods=["POST"])
 @login_required
-@admin_required
+@superadmin_required
 def delete_user(user_id):
     u = User.query.get_or_404(user_id)
+    if u.id == current_user.id:
+        flash("Cannot delete yourself.", "warning")
+        return redirect(url_for("admin.dashboard") + "#users")
     db.session.delete(u)
     db.session.commit()
     flash("User deleted.", "info")
-    return redirect(url_for("admin.dashboard"))
+    return redirect(url_for("admin.dashboard") + "#users")
 
+
+# ── Course Management ─────────────────────────────────────────────────────────
 
 @bp.route("/course/add", methods=["POST"])
 @login_required
@@ -104,7 +137,23 @@ def add_course():
     db.session.add(c)
     db.session.commit()
     flash("Course added.", "success")
-    return redirect(url_for("admin.dashboard"))
+    return redirect(url_for("admin.dashboard") + "#courses")
+
+
+@bp.route("/course/<int:course_id>/edit", methods=["POST"])
+@login_required
+@admin_required
+def edit_course(course_id):
+    c = Course.query.get_or_404(course_id)
+    c.title       = request.form.get("title", c.title).strip()
+    c.description = request.form.get("description", c.description).strip()
+    c.category    = request.form.get("category", c.category).strip()
+    c.level       = request.form.get("level", c.level)
+    c.instructor  = request.form.get("instructor", c.instructor).strip()
+    c.youtube_id  = request.form.get("youtube_id", c.youtube_id).strip()
+    db.session.commit()
+    flash("Course updated.", "success")
+    return redirect(url_for("admin.dashboard") + "#courses")
 
 
 @bp.route("/course/<int:course_id>/delete", methods=["POST"])
@@ -115,8 +164,35 @@ def delete_course(course_id):
     db.session.delete(c)
     db.session.commit()
     flash("Course deleted.", "info")
-    return redirect(url_for("admin.dashboard"))
+    return redirect(url_for("admin.dashboard") + "#courses")
 
+
+# ── Mentor Management ─────────────────────────────────────────────────────────
+
+@bp.route("/mentor/<int:mentor_id>/approve", methods=["POST"])
+@login_required
+@admin_required
+def approve_mentor(mentor_id):
+    m = MentorProfile.query.get_or_404(mentor_id)
+    m.approved = True
+    m.user.role = "mentor"
+    db.session.commit()
+    flash("Mentor approved.", "success")
+    return redirect(url_for("admin.dashboard") + "#mentors")
+
+
+@bp.route("/mentor/<int:mentor_id>/reject", methods=["POST"])
+@login_required
+@admin_required
+def reject_mentor(mentor_id):
+    m = MentorProfile.query.get_or_404(mentor_id)
+    db.session.delete(m)
+    db.session.commit()
+    flash("Mentor application rejected.", "info")
+    return redirect(url_for("admin.dashboard") + "#mentors")
+
+
+# ── Doubt Management ──────────────────────────────────────────────────────────
 
 @bp.route("/doubt/<int:doubt_id>/reply", methods=["POST"])
 @login_required
@@ -127,16 +203,18 @@ def reply_doubt(doubt_id):
     d.status = "answered"
     db.session.commit()
     flash("Reply sent.", "success")
-    return redirect(url_for("admin.dashboard"))
+    return redirect(url_for("admin.dashboard") + "#doubts")
 
+
+# ── Quiz Management ───────────────────────────────────────────────────────────
 
 @bp.route("/quiz/<int:quiz_id>/question/add", methods=["POST"])
 @login_required
 @admin_required
 def add_question(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    Quiz.query.get_or_404(quiz_id)
     q = QuizQuestion(
-        quiz_id=quiz.id,
+        quiz_id=quiz_id,
         question=request.form["question"],
         option_a=request.form["option_a"],
         option_b=request.form["option_b"],
@@ -161,6 +239,8 @@ def delete_question(q_id):
     flash("Question deleted.", "info")
     return redirect(url_for("admin.dashboard") + "#quizzes")
 
+
+# ── Notes Management ──────────────────────────────────────────────────────────
 
 @bp.route("/notes/upload", methods=["POST"])
 @login_required

@@ -353,10 +353,12 @@ function closeOutline() {
 async function markComplete() {
   const btn = document.getElementById('complete-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
+  const active = document.querySelector('.outline-lesson.active');
+  const moduleIdx = active ? active.dataset.idx : 0;
   try {
-    const res = await fetch('/api/complete-module', {
+    const res = await fetch(`/api/mark-complete/${COURSE_ID}/${moduleIdx}`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({course_id: COURSE_ID})
+      body: JSON.stringify({})
     });
     const data = await res.json();
     if (data.progress !== undefined) {
@@ -367,8 +369,6 @@ async function markComplete() {
     }
     btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completed';
     btn.style.background = 'var(--success)';
-    // Mark active lesson done
-    const active = document.querySelector('.outline-lesson.active');
     if (active) {
       active.classList.add('done');
       const num = active.querySelector('.lesson-num');
@@ -404,13 +404,13 @@ const _origNotes = document.getElementById('course-notes-text')?.textContent || 
 async function translateNotes() {
   if (USER_LANG === 'en') return;
   try {
-    const res = await fetch('/api/translate', {
+    const res = await fetch('/api/translate-page', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({text: _origNotes, target_lang: USER_LANG})
+      body: JSON.stringify({strings: [_origNotes], lang: USER_LANG})
     });
     const d = await res.json();
     if (d.translated) {
-      document.getElementById('course-notes-text').textContent = d.translated;
+      document.getElementById('course-notes-text').textContent = d.translated[0] || _origNotes;
       document.getElementById('notes-lang-label').textContent = USER_LANG.toUpperCase();
       document.getElementById('notes-lang-info').style.display = 'flex';
     }
@@ -429,7 +429,7 @@ async function loadVideos(lang) {
   const list = document.getElementById('video-list');
   list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-faint);font-size:13px;">Loading…</div>';
   try {
-    const res = await fetch(`/api/suggested-videos?course_id=${COURSE_ID}&lang=${lang}`);
+    const res = await fetch(`/api/youtube-videos/${COURSE_ID}?lang=${lang}`);
     const data = await res.json();
     const videos = data.videos || [];
     if (!videos.length) {

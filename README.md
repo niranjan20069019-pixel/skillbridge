@@ -1,189 +1,160 @@
-# SkillBridge — Digital Education & Upskilling Platform
+# SkillBridge — AI-Powered Education Platform
 
-> Bridging the gap between rural India and industry-ready skills.
+> Bridging the skill gap with AI guidance. Built for rural India, powered by Gemini AI.
 
 ---
 
-## 📁 Project Structure
+## Architecture
 
 ```
 skillbridge/
-├── app.py                  # Main Flask application
-├── run.py                  # Cross-platform launcher
-├── run.bat                 # Windows double-click launcher
-├── requirements.txt        # Python dependencies
-├── README.md               # This file
-├── instance/               # SQLite database (auto-created)
-│   └── skillbridge.db
-├── templates/              # Jinja2 HTML templates
-│   ├── base.html           # Shared layout
-│   ├── index.html          # Template A: Landing Page
-│   ├── dashboard.html      # Template B: Student Dashboard
-│   ├── learn.html          # Template C: Learning Interface
-│   ├── courses.html        # Course listing page
-│   ├── login.html          # Login form
-│   └── register.html       # Registration form
-└── static/                 # Static assets
-    ├── css/
-    ├── js/
-    └── img/
+├── frontend/          # React + TypeScript + Vite
+│   ├── src/
+│   │   ├── components/  # UI & feature components
+│   │   ├── pages/       # Route pages
+│   │   ├── hooks/       # Custom React hooks
+│   │   ├── context/     # React context providers
+│   │   ├── services/    # API service layer
+│   │   ├── utils/       # Utility functions
+│   │   └── styles/      # Global CSS
+│   └── package.json
+├── backend/           # Node.js + Express API
+│   ├── src/
+│   │   ├── routes/     # API route handlers
+│   │   ├── services/   # Gemini & OpenAI integrations
+│   │   └── utils/      # Logger, helpers
+│   └── package.json
+└── README.md
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Option 1: Double-Click (Windows Only)
-1. Install Python 3.8+ from https://python.org (check "Add Python to PATH")
-2. Double-click `run.bat`
-3. Open http://localhost:5000 in your browser
+### Prerequisites
+- Node.js 18+ and npm
+- (Optional) Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+- (Optional) OpenAI API key from [OpenAI](https://platform.openai.com/api-keys)
 
----
+### 1. Backend Setup
 
-### Option 2: Python Launcher (Windows & Linux)
 ```bash
-python run.py
+cd backend
+cp .env.example .env
+# Edit .env and add your API keys (optional — app works with fallback)
+npm install
+npm run dev
 ```
 
----
+The API server starts at **http://localhost:3001**
 
-### Option 3: Manual Setup
+### 2. Frontend Setup
 
-#### 🐧 Linux (Ubuntu/Mint)
 ```bash
-# Clone or extract project
-cd skillbridge
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run server
-python app.py
+cd frontend
+npm install
+npm run dev
 ```
 
-#### 🪟 Windows (PowerShell)
-```powershell
-# Navigate to project
-cd skillbridge
+The frontend starts at **http://localhost:5173**
 
-# Create virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+---
 
-# If execution policy error:
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+## API Key Configuration
 
-# Install dependencies
-pip install -r requirements.txt
+Create `backend/.env` with:
 
-# Run server
-python app.py
+```env
+PORT=3001
+FRONTEND_URL=http://localhost:5173
+
+# Option 1: Google Gemini API (Recommended — Free tier available)
+GEMINI_API_KEY=your_gemini_api_key
+
+# Option 2: OpenAI API (Paid)
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-#### 🪟 Windows (Command Prompt)
-```cmd
-cd skillbridge
-python -m venv venv
-venv\Scripts\activate.bat
-pip install -r requirements.txt
-python app.py
-```
+> Without any API key, the AI assistant uses intelligent fallback responses and translation shows a setup guide. For full AI features, at least one API key is recommended.
 
 ---
 
-## 🌐 Access the Application
+## Features
 
-Once running, open: **http://localhost:5000**
+### Dashboard
+- Modern glassmorphism UI with dark/light mode
+- Course progress tracking with animated bars
+- Weekly activity chart
+- Quick action tiles (AI Assistant, Translator, Courses, Analytics)
+- Learning streak tracker
 
-| Page | URL |
-|------|-----|
-| Landing Page | http://localhost:5000/ |
-| Register | http://localhost:5000/register |
-| Login | http://localhost:5000/login |
-| Dashboard | http://localhost:5000/dashboard |
-| All Courses | http://localhost:5000/courses |
-| Learning Interface | http://localhost:5000/learn/1 |
+### AI Assistant
+- Gemini/OpenAI powered chat with multilingual support
+- Voice input (browser SpeechRecognition)
+- Markdown rendering for structured responses
+- Chat history with copy support
+- Quick suggestion chips
+- Typing indicator animation
+- Error fallback handling
 
----
+### Language Translator
+- Supports 8 Indian languages:
+  - English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali
+- Auto-detect source language
+- Text-to-speech for input/output
+- Copy translated text
+- Quick language buttons
 
-## ✨ Features
-
-### Frontend (3 Professional Templates)
-- **Template A — Landing Page**: Hero, mission stats, category grid, testimonials, CTA
-- **Template B — Student Dashboard**: Sidebar nav, enrolled courses, skill progress bars, AI recommendations, peer mentor chat
-- **Template C — Learning Interface**: YouTube video player, module sidebar, tabs (Overview/Resources/Notes/Q&A), progress tracking
-
-### Backend (Flask + SQLite)
-- User authentication (register/login/logout with hashed passwords)
-- Course catalog with 6 seeded courses across 5 categories
-- Enrollment system with progress tracking
-- AI skill recommendation engine (interest-based)
-- Peer mentor chat API
-- Cross-platform path handling with `os.path.join`
-
-### Database Models
-- **User**: name, email, password_hash, interest, location, joined_at
-- **Course**: title, description, category, level, duration, instructor, youtube_id, modules (JSON)
-- **Enrollment**: user_id, course_id, progress (0-100), enrolled_at
+### Authentication
+- Login/Register with field validation
+- Session management with tokens
+- Toast notifications for success/errors
+- User profile dropdown menu
 
 ---
 
-## 🔌 API Endpoints
+## Build for Production
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/recommend` | AI skill recommendations for current user |
-| POST | `/api/progress/<course_id>` | Update course progress |
-| POST | `/api/chat` | Peer mentor chat response |
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Python 3.8+, Flask 3.0, Flask-SQLAlchemy, Flask-Login |
-| Database | SQLite (zero-config, cross-platform) |
-| Frontend | HTML5, Tailwind CSS (CDN), Vanilla JS |
-| Fonts | Google Fonts: Syne + DM Sans |
-| Video | YouTube Embed API |
-| Auth | Werkzeug password hashing |
-
----
-
-## 📝 Demo Accounts
-Register any new account — the system auto-enrolls you in a course matching your interest.
-
----
-
-## 🐛 Troubleshooting
-
-**Port already in use:**
 ```bash
-# Linux
-lsof -ti:5000 | xargs kill -9
-# Windows
-netstat -ano | findstr :5000
-taskkill /PID <PID> /F
-```
+cd frontend
+npm run build
+# Output in frontend/dist/
 
-**Module not found:**
-```bash
-pip install -r requirements.txt --force-reinstall
-```
-
-**Database issues:**
-```bash
-# Delete and recreate
-rm instance/skillbridge.db
-python app.py
+cd backend
+npm start
 ```
 
 ---
 
-## 📄 License
-Built for the Digital Education Hackathon. MIT License.
+## Tech Stack
+
+| Frontend | Backend |
+|----------|---------|
+| React 18 | Node.js + Express |
+| TypeScript | ESM Modules |
+| Vite | Gemini API |
+| Tailwind CSS | OpenAI API |
+| Framer Motion | Rate Limiting |
+| shadcn/ui | Winston Logger |
+| Radix UI | CORS + Helmet |
+| Axios | |
+
+---
+
+## Deployment
+
+### Frontend (Vercel/Netlify)
+```bash
+cd frontend
+npm run build
+# Deploy dist/ directory
+```
+
+### Backend (Render/Railway)
+```bash
+cd backend
+npm start
+# Set environment variables in dashboard
+```
+
+Ensure the frontend's `VITE_API_URL` points to your deployed backend URL.

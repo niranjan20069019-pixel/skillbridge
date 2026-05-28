@@ -7,21 +7,21 @@
 
   <!-- Score card -->
   <div class="card-flat" style="padding:36px;text-align:center;margin-bottom:24px;">
-    <div style="font-size:52px;margin-bottom:12px;">{% if attempt.passed %}🎉{% else %}📚{% endif %}</div>
-    <h1 style="font-size:26px;font-weight:800;margin-bottom:6px;">{% if attempt.passed %}Congratulations!{% else %}Keep Practising!{% endif %}</h1>
+    <div style="font-size:52px;margin-bottom:12px;">{% if passed %}🎉{% else %}📚{% endif %}</div>
+    <h1 style="font-size:26px;font-weight:800;margin-bottom:6px;">{% if passed %}Congratulations!{% else %}Keep Practising!{% endif %}</h1>
     <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;">{{ course.title }} · {{ quiz.title }}</p>
 
     <!-- Score ring -->
-    <div style="width:120px;height:120px;border-radius:50%;border:4px solid {% if attempt.passed %}#10b981{% else %}#ef4444{% endif %};display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
-      <span style="font-size:32px;font-weight:800;color:{% if attempt.passed %}#10b981{% else %}#ef4444{% endif %};">{{ attempt.score }}%</span>
+    <div style="width:120px;height:120px;border-radius:50%;border:4px solid {% if passed %}#10b981{% else %}#ef4444{% endif %};display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+      <span style="font-size:32px;font-weight:800;color:{% if passed %}#10b981{% else %}#ef4444{% endif %};">{{ score }}%</span>
     </div>
 
     <!-- Stats -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
       {% for label, value, color in [
-        ("Correct", attempt.correct_q|string + "/" + attempt.total_q|string, "#10b981"),
-        ("Score", attempt.score|string + "%", "#10b981" if attempt.passed else "#ef4444"),
-        ("Status", "PASSED" if attempt.passed else "FAILED", "#10b981" if attempt.passed else "#ef4444"),
+        ("Correct", correct_q|string + "/" + total_q|string, "#10b981"),
+        ("Score", score|string + "%", "#10b981" if passed else "#ef4444"),
+        ("Status", "PASSED" if passed else "FAILED", "#10b981" if passed else "#ef4444"),
       ] %}
       <div class="card-flat" style="padding:14px;">
         <p style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">{{ label }}</p>
@@ -30,7 +30,7 @@
       {% endfor %}
     </div>
 
-    <p style="font-size:12px;color:var(--text-faint);margin-bottom:20px;">Pass mark: {{ quiz.pass_pct }}%{% if not attempt.passed %} — Need {{ quiz.pass_pct - attempt.score }} more points.{% endif %}</p>
+    <p style="font-size:12px;color:var(--text-faint);margin-bottom:20px;">Pass mark: {{ quiz.pass_pct }}%{% if not passed %} — Need {{ quiz.pass_pct - score }} more points.{% endif %}</p>
 
     <!-- Actions -->
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">

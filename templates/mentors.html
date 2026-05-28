@@ -13,14 +13,14 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
-      <a href="{{ url_for('skill_paths') }}" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
-      <a href="{{ url_for('gamification') }}" class="nav-link"><span>🏆</span><span>Achievements</span></a>
-      <a href="{{ url_for('mentors') }}" class="nav-link active"><span>🤝</span><span>Mentors</span></a>
-      <a href="{{ url_for('analytics') }}" class="nav-link"><span>📊</span><span>Analytics</span></a>
+      <a href="{{ url_for('main.dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('main.skill_paths') }}" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="{{ url_for('main.gamification') }}" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="{{ url_for('main.mentors') }}" class="nav-link active"><span>🤝</span><span>Mentors</span></a>
+      <a href="{{ url_for('main.analytics') }}" class="nav-link"><span>📊</span><span>Analytics</span></a>
     </nav>
     <div class="sidebar-footer">
-      <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+      <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
     </div>
   </aside>
 
@@ -33,7 +33,7 @@
           <h1 style="font-size:24px;font-weight:800;margin-bottom:4px;">🤝 Mentors</h1>
           <p style="font-size:14px;color:var(--text-muted);">Get guidance from experienced mentors in your field.</p>
         </div>
-        <a href="{{ url_for('mentor_apply') }}" class="btn btn-primary btn-sm">Become a Mentor</a>
+        <a href="{{ url_for('main.mentor_apply') }}" class="btn btn-primary btn-sm">Become a Mentor</a>
       </div>
 
       <!-- Skill filter -->
@@ -78,8 +78,9 @@
             <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
               <details style="position:relative;">
                 <summary class="btn btn-ghost btn-sm" style="list-style:none;cursor:pointer;">⭐ Rate</summary>
-                <form method="POST" action="{{ url_for('rate_mentor', mentor_id=mentor.id) }}"
+                <form method="POST" action="{{ url_for('main.rate_mentor', mentor_id=mentor.id) }}"
                       style="position:absolute;right:0;top:36px;z-index:20;background:var(--bg-raised);border:1px solid var(--border-md);border-radius:var(--radius);padding:16px;width:220px;box-shadow:var(--shadow-lg);">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                   <select name="rating" class="input" style="font-size:12px;margin-bottom:8px;">
                     {% for i in range(1,6) %}<option value="{{ i }}">{{ i }} ⭐</option>{% endfor %}
                   </select>
@@ -89,8 +90,9 @@
               </details>
               <details style="position:relative;">
                 <summary class="btn btn-primary btn-sm" style="list-style:none;cursor:pointer;">💬 Ask Doubt</summary>
-                <form method="POST" action="{{ url_for('submit_doubt', mentor_id=mentor.id) }}"
+                <form method="POST" action="{{ url_for('main.submit_doubt', mentor_id=mentor.id) }}"
                       style="position:absolute;right:0;top:36px;z-index:20;background:var(--bg-raised);border:1px solid var(--border-md);border-radius:var(--radius);padding:16px;width:260px;box-shadow:var(--shadow-lg);">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                   <input name="subject" placeholder="Subject" class="input" style="font-size:12px;margin-bottom:8px;" required/>
                   <textarea name="message" placeholder="Your question…" rows="3" class="input" style="font-size:12px;margin-bottom:8px;resize:none;" required></textarea>
                   <button type="submit" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">Send</button>

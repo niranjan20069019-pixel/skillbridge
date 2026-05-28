@@ -11,6 +11,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
   <script>
     (function(){
       const dark = localStorage.getItem('sb_dark') !== '0';
@@ -28,7 +33,7 @@
     {% if messages %}
     <div class="flash-wrap" role="alert" aria-live="polite">
       {% for category, message in messages %}
-      <div class="flash">
+      <div class="flash flash-{{ category }}">
         <span aria-hidden="true">
           {% if category == 'success' %}✅{% elif category == 'danger' %}❌{% elif category == 'warning' %}⚠️{% else %}ℹ️{% endif %}
         </span>

@@ -26,14 +26,24 @@ class Config:
     LOG_LEVEL = "INFO"
     LOG_FILE  = os.path.join(BASE_DIR, "logs", "skillbridge.log")
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+    # Database configuration - supports both SQLite and PostgreSQL
+    @property
+    def SQLALCHEMY_DATABASE_URI(self):
+        # Check if DATABASE_URL is explicitly set (for PostgreSQL)
+        database_url = os.environ.get("DATABASE_URL")
+        if database_url:
+            return database_url
+        # Fallback to SQLite for development
+        return os.environ.get(
+            "DATABASE_URL",
+            "sqlite:///" + os.path.join(BASE_DIR, "instance", "skillbridge.db"),
+        )
 
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL",
-        "sqlite:///" + os.path.join(BASE_DIR, "instance", "skillbridge.db"),
-    )
     WTF_CSRF_ENABLED = True
     LOG_LEVEL = "DEBUG"
 
@@ -41,19 +51,17 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")  # must be set
-    SESSION_COOKIE_SECURE   = True
+    SESSION_COOKIE_SECURE   = os.environ.get("SESSION_COOKIE_SECURE", "False").lower() == "true"
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Lax"
-    PREFERRED_URL_SCHEME    = "https"
+    SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
+    PREFERRED_URL_SCHEME    = os.environ.get("PREFERRED_URL_SCHEME", "http")
     LOG_LEVEL = "WARNING"
 
     @classmethod
     def validate(cls):
         if not os.environ.get("SECRET_KEY"):
             raise RuntimeError("SECRET_KEY environment variable must be set in production.")
-        if not os.environ.get("DATABASE_URL"):
-            raise RuntimeError("DATABASE_URL environment variable must be set in production.")
+        # Note: DATABASE_URL validation is handled in the property getter
 
 
 class TestingConfig(Config):

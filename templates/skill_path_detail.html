@@ -24,12 +24,12 @@
       </div>
     </div>
     <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-      <a href="{{ url_for('dashboard') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🏠</span><span>Overview</span></a>
-      <a href="{{ url_for('courses') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🔍</span><span>Browse Courses</span></a>
-      <a href="{{ url_for('skill_paths') }}" class="nav-link nav-active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🗺️</span><span class="font-medium">{{ t('skill_paths') }}</span></a>
+      <a href="{{ url_for('main.dashboard') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('main.courses') }}" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🔍</span><span>Browse Courses</span></a>
+      <a href="{{ url_for('main.skill_paths') }}" class="nav-link nav-active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body transition-all"><span>🗺️</span><span class="font-medium">{{ t('skill_paths') }}</span></a>
     </nav>
     <div class="p-3 border-t shrink-0" style="border-color:rgba(255,255,255,0.06);">
-      <a href="{{ url_for('logout') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body" style="color:rgba(255,255,255,0.4);"><span>🚪</span><span>Logout</span></a>
+      <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body" style="color:rgba(255,255,255,0.4);"><span>🚪</span><span>Logout</span></a>
     </div>
   </aside>
 
@@ -39,7 +39,7 @@
 
       <!-- Top bar: back + language switcher -->
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <a href="{{ url_for('skill_paths') }}" class="text-sm font-body" style="color:rgba(255,255,255,0.4);">{{ t('back') }}</a>
+        <a href="{{ url_for('main.skill_paths') }}" class="text-sm font-body" style="color:rgba(255,255,255,0.4);">{{ t('back') }}</a>
         <!-- Language switcher -->
         <div class="flex items-center gap-1.5">
           {% for code, label in [('en','EN'),('hi','हि'),('kn','ಕ'),('ta','த'),('te','తె')] %}
@@ -88,7 +88,8 @@
           <p class="text-xs font-body mt-1" style="color:rgba(255,255,255,0.3);">{{ completed_steps|length }} / {{ path.steps|length }} {{ t('steps_completed') }}</p>
         </div>
         {% else %}
-        <form method="POST" action="{{ url_for('enroll_skill_path', slug=path.slug) }}" class="mt-5">
+        <form method="POST" action="{{ url_for('main.enroll_skill_path', slug=path.slug) }}" class="mt-5">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <button type="submit" class="px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-white hover:opacity-90 transition-all" style="background:{{ path.color }};">🚀 {{ t('start_path') }}</button>
         </form>
         {% endif %}
@@ -183,7 +184,7 @@
                   {% if step.course %}
                   <div class="flex items-center justify-between mb-4 px-3 py-2 rounded-xl" style="background:rgba(255,255,255,0.04);">
                     <span class="text-xs font-body" style="color:rgba(255,255,255,0.4);">📚 {{ step.course }}</span>
-                    <a href="{{ url_for('courses') }}?q={{ step.course|urlencode }}" class="text-xs font-body font-medium" style="color:{{ path.color }};">{{ t('view_course') }}</a>
+                    <a href="{{ url_for('main.courses') }}?q={{ step.course|urlencode }}" class="text-xs font-body font-medium" style="color:{{ path.color }};">{{ t('view_course') }}</a>
                   </div>
                   {% endif %}
 

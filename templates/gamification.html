@@ -13,14 +13,14 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
-      <a href="{{ url_for('skill_paths') }}" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
-      <a href="{{ url_for('gamification') }}" class="nav-link active"><span>🏆</span><span>Achievements</span></a>
-      <a href="{{ url_for('mentors') }}" class="nav-link"><span>🤝</span><span>Mentors</span></a>
-      <a href="{{ url_for('analytics') }}" class="nav-link"><span>📊</span><span>Analytics</span></a>
+      <a href="{{ url_for('main.dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('main.skill_paths') }}" class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="{{ url_for('main.gamification') }}" class="nav-link active"><span>🏆</span><span>Achievements</span></a>
+      <a href="{{ url_for('main.mentors') }}" class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="{{ url_for('main.analytics') }}" class="nav-link"><span>📊</span><span>Analytics</span></a>
     </nav>
     <div class="sidebar-footer">
-      <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+      <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
     </div>
   </aside>
 

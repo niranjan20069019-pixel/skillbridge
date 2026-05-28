@@ -3,31 +3,29 @@
 
 {% block extra_head %}
 <style>
-  .app-shell { display:flex; min-height:100vh; background:var(--bg); }
-  .main-scroll { flex:1; min-width:0; overflow-x:hidden; }
-  .topbar-inner-dash { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg-card); flex-shrink:0; position:sticky; top:0; z-index:20; }
-  .stat-tile { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
-  .enroll-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px; transition:border-color var(--transition); }
-  .enroll-card:hover { border-color:var(--border-md); }
-  .chat-bubble-user { background:var(--brand-dim); color:#bfdbfe; border-radius:14px 14px 4px 14px; padding:7px 11px; font-size:13px; max-width:85%; }
-  .chat-bubble-bot  { background:var(--bg-raised); color:var(--text-muted); border-radius:14px 14px 14px 4px; padding:7px 11px; font-size:13px; max-width:85%; line-height:1.6; }
-  .skill-row { margin-bottom:12px; }
-  .skill-row:last-child { margin-bottom:0; }
-  .dash-hamburger { display:none; }
-  @media (max-width:768px) {
-    .app-shell { flex-direction:column; }
-    .dash-hamburger { display:flex; }
-    .dash-two-col { grid-template-columns:1fr !important; }
-    .dash-stats   { grid-template-columns:repeat(2,1fr) !important; }
-    .topbar-inner-dash { padding:0 12px; }
-    .topbar-inner-dash h1 { font-size:14px !important; }
-    .topbar-inner-dash .btn { font-size:12px; padding:5px 10px; }
-    #overview { padding:14px !important; gap:16px !important; }
+  .app-shell{display:flex;min-height:100vh;background:var(--bg);}
+  .main-scroll{flex:1;min-width:0;overflow-x:hidden;}
+  .topbar-inner-dash{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg-card);flex-shrink:0;position:sticky;top:0;z-index:20;}
+  .stat-tile{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+  .enroll-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;transition:border-color var(--transition);}
+  .enroll-card:hover{border-color:var(--border-md);}
+  .chat-bubble-user{background:var(--brand-dim);color:#bfdbfe;border-radius:14px 14px 4px 14px;padding:7px 11px;font-size:13px;max-width:85%;}
+  .chat-bubble-bot{background:var(--bg-raised);color:var(--text-muted);border-radius:14px 14px 14px 4px;padding:7px 11px;font-size:13px;max-width:85%;line-height:1.6;}
+  .skill-row{margin-bottom:12px;}
+  .skill-row:last-child{margin-bottom:0;}
+  .dash-hamburger{display:none;}
+  .chart-wrap{position:relative;height:180px;}
+  @media(max-width:768px){
+    .app-shell{flex-direction:column;}
+    .dash-hamburger{display:flex;}
+    .dash-two-col{grid-template-columns:1fr!important;}
+    .dash-stats{grid-template-columns:repeat(2,1fr)!important;}
+    .topbar-inner-dash{padding:0 12px;}
+    #overview{padding:14px!important;gap:16px!important;}
   }
-  @media (max-width:400px) {
-    .dash-stats { grid-template-columns:repeat(2,1fr) !important; }
-    .stat-tile { padding:12px; }
-    .stat-tile p:first-of-type { font-size:18px !important; }
+  @media(max-width:400px){
+    .dash-stats{grid-template-columns:repeat(2,1fr)!important;}
+    .stat-tile{padding:12px;}
   }
 </style>
 {% endblock %}
@@ -35,7 +33,7 @@
 {% block content %}
 <div class="app-shell">
 
-  <!-- ── SIDEBAR ── -->
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <a href="/" class="logo">
@@ -45,8 +43,6 @@
         <span class="logo-text" style="font-size:16px;">Skill<span>Bridge</span></span>
       </a>
     </div>
-
-    <!-- User -->
     <div style="padding:16px;border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
         <div class="avatar avatar-md">{{ current_user.name[0].upper() }}</div>
@@ -55,7 +51,6 @@
           <p style="font-size:12px;color:var(--text-faint);">{{ current_user.interest }}</p>
         </div>
       </div>
-      <!-- Skill score -->
       <div style="background:var(--bg-raised);border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px;">
         <div style="position:relative;width:40px;height:40px;flex-shrink:0;">
           <svg width="40" height="40" style="transform:rotate(-90deg);" viewBox="0 0 40 40">
@@ -67,14 +62,12 @@
         </div>
         <div>
           <p style="font-size:12px;font-weight:600;">Skill Score</p>
-          <p style="font-size:11px;color:var(--text-faint);">{% if skill_score >= 80 %}Expert!{% elif skill_score >= 50 %}Keep going!{% else %}Getting started{% endif %}</p>
+          <p style="font-size:11px;color:var(--text-faint);">{% if skill_score>=80 %}Expert!{% elif skill_score>=50 %}Keep going!{% else %}Getting started{% endif %}</p>
         </div>
       </div>
     </div>
-
-    <!-- Nav -->
     <nav class="sidebar-nav">
-      {% set nav = [
+      {% for icon,label,href,active in [
         ("🏠","Overview","#overview",True),
         ("📚","My Courses","#courses",False),
         ("📈","Progress","#progress",False),
@@ -84,25 +77,21 @@
         ("📊","Analytics","/analytics",False),
         ("🔍","Browse Courses","/courses",False),
       ] %}
-      {% for icon, label, href, active in nav %}
       <a href="{{ href }}" class="nav-link {% if active %}active{% endif %}">
-        <span>{{ icon }}</span>
-        <span data-i18n>{{ label }}</span>
+        <span>{{ icon }}</span><span data-i18n>{{ label }}</span>
         {% if active %}<span style="width:6px;height:6px;border-radius:50%;background:var(--brand-light);margin-left:auto;"></span>{% endif %}
       </a>
       {% endfor %}
     </nav>
-
     <div class="sidebar-footer">
       <a href="/" class="nav-link"><span>🏠</span><span data-i18n>Home</span></a>
       <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span data-i18n>Logout</span></a>
     </div>
   </aside>
 
-  <!-- Mobile sidebar overlay -->
+  <!-- Mobile overlay + sidebar -->
   <div class="sidebar-overlay" id="mob-overlay" onclick="closeMobSidebar()"></div>
   <aside class="sidebar sidebar-mobile" id="mob-sidebar">
-    <!-- same nav as desktop sidebar, shown on mobile -->
     <div class="sidebar-header">
       <a href="/" class="logo">
         <div class="logo-icon" style="width:28px;height:28px;"><svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
@@ -110,27 +99,25 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a href="#overview" class="nav-link active" onclick="closeMobSidebar()"><span>🏠</span><span data-i18n>Overview</span></a>
-      <a href="#courses"  class="nav-link" onclick="closeMobSidebar()"><span>📚</span><span data-i18n>My Courses</span></a>
-      <a href="#progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span data-i18n>Progress</span></a>
-      <a href="/skill-paths"  class="nav-link"><span>🗺️</span><span data-i18n>Skill Paths</span></a>
-      <a href="/gamification" class="nav-link"><span>🏆</span><span data-i18n>Achievements</span></a>
-      <a href="/mentors"      class="nav-link"><span>🤝</span><span data-i18n>Mentors</span></a>
-      <a href="/analytics"    class="nav-link"><span>📊</span><span data-i18n>Analytics</span></a>
-      <a href="/courses"      class="nav-link"><span>🔍</span><span data-i18n>Browse Courses</span></a>
+      <a href="#overview" class="nav-link active" onclick="closeMobSidebar()"><span>🏠</span><span>Overview</span></a>
+      <a href="#courses"  class="nav-link" onclick="closeMobSidebar()"><span>📚</span><span>My Courses</span></a>
+      <a href="#progress" class="nav-link" onclick="closeMobSidebar()"><span>📈</span><span>Progress</span></a>
+      <a href="/skill-paths"  class="nav-link"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="/gamification" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="/mentors"      class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="/analytics"    class="nav-link"><span>📊</span><span>Analytics</span></a>
+      <a href="/courses"      class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
     </nav>
     <div class="sidebar-footer">
-      <a href="/" class="nav-link"><span>🏠</span><span data-i18n>Home</span></a>
-      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span data-i18n>Logout</span></a>
+      <a href="/" class="nav-link"><span>🏠</span><span>Home</span></a>
+      <a href="/logout" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
     </div>
   </aside>
 
-  <!-- ── MAIN ── -->
+  <!-- MAIN -->
   <div class="main-scroll" style="display:flex;flex-direction:column;">
-    <!-- Topbar -->
     <div class="topbar-inner-dash">
       <div style="display:flex;align-items:center;gap:10px;">
-        <!-- Hamburger (mobile only) -->
         <button class="btn btn-ghost btn-sm dash-hamburger" onclick="openMobSidebar()" aria-label="Open menu" style="padding:6px 8px;">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
@@ -143,26 +130,25 @@
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <select id="page-lang-select" onchange="setAndTranslatePage(this.value)" class="input" style="width:auto;font-size:12px;padding:5px 28px 5px 9px;" title="Change language">
-          {% for code, label in SUPPORTED_LANGUAGES.items() %}
-          <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ label }}</option>
+          {% for code,label in SUPPORTED_LANGUAGES.items() %}
+          <option value="{{ code }}" {% if code==lang %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
-        <a href="/courses" class="btn btn-primary btn-sm" data-i18n>+ Explore Courses</a>
+        <a href="/courses" class="btn btn-primary btn-sm" data-i18n>+ Explore</a>
       </div>
     </div>
 
-    <!-- Content -->
-    <div style="padding:28px;display:flex;flex-direction:column;gap:24px;" id="overview">
+    <div style="padding:24px;display:flex;flex-direction:column;gap:20px;" id="overview">
 
-      <!-- Stats -->
+      <!-- Stats row -->
       {% set completed_count = enrollments|selectattr("progress","equalto",100)|list|length %}
       {% set hours_studied = (enrollments|sum(attribute="progress") // 10) %}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;" class="dash-stats">
-        {% for icon, label, value, color in [
+        {% for icon,label,value,color in [
           ("📚","Enrolled",enrollments|length,"var(--brand-light)"),
           ("✅","Completed",completed_count,"#10b981"),
-          ("⏱️","Hours Studied",hours_studied|string+"h","#8b5cf6"),
-          ("🏅","Certificates",completed_count,"#f59e0b"),
+          ("⏱️","Hours",hours_studied|string+"h","#8b5cf6"),
+          ("🏅","Certs",completed_count,"#f59e0b"),
         ] %}
         <div class="stat-tile">
           <span style="font-size:20px;">{{ icon }}</span>
@@ -172,13 +158,23 @@
         {% endfor %}
       </div>
 
-      <!-- Two-column -->
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:18px;" class="dash-two-col" id="courses">
+      <!-- Charts row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="dash-two-col">
+        <div class="card-flat" style="padding:16px;">
+          <p style="font-size:13px;font-weight:600;margin-bottom:12px;" data-i18n>📈 Course Progress</p>
+          <div class="chart-wrap"><canvas id="chartProgress"></canvas></div>
+        </div>
+        <div class="card-flat" style="padding:16px;">
+          <p style="font-size:13px;font-weight:600;margin-bottom:12px;" data-i18n>📝 Quiz Scores</p>
+          <div class="chart-wrap"><canvas id="chartQuiz"></canvas></div>
+        </div>
+      </div>
 
-        <!-- Left -->
+      <!-- Two-column: courses + right panel -->
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;" class="dash-two-col" id="courses">
+
+        <!-- Left: My Courses + Skill bars -->
         <div style="display:flex;flex-direction:column;gap:20px;">
-
-          <!-- My Courses -->
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
               <h2 style="font-size:16px;font-weight:700;" data-i18n>My Courses</h2>
@@ -214,53 +210,34 @@
             <div class="card-flat" style="padding:40px;text-align:center;">
               <p style="font-size:36px;margin-bottom:12px;">📚</p>
               <p style="font-weight:600;margin-bottom:6px;" data-i18n>No courses yet</p>
-              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;" data-i18n>Start your learning journey today.</p>
               <a href="/courses" class="btn btn-primary btn-sm" data-i18n>Browse Courses</a>
             </div>
             {% endif %}
           </div>
 
-          <!-- Skill Progress -->
+          <!-- Skill bars from DB via chart -->
           <div class="card-flat" style="padding:20px;" id="progress">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
               <h2 style="font-size:16px;font-weight:700;" data-i18n>Skill Progress</h2>
               <button onclick="loadRecs()" style="font-size:12px;color:var(--brand-light);background:none;border:none;cursor:pointer;" data-i18n>AI Recs →</button>
             </div>
-            {% for skill, pct, color in [("Python",72,"#3b82f6"),("Data Analysis",45,"#8b5cf6"),("Communication",88,"#10b981"),("Digital Marketing",30,"#f59e0b"),("Financial Literacy",55,"#06b6d4")] %}
-            <div class="skill-row">
-              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
-                <span style="color:var(--text-muted);">{{ skill }}</span>
-                <span style="font-weight:700;color:{{ color }};">{{ pct }}%</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill skill-bar" data-w="{{ pct }}" data-color="{{ color }}" style="width:0;"></div>
-              </div>
-            </div>
-            {% endfor %}
+            <div class="chart-wrap" style="height:160px;"><canvas id="chartSkills"></canvas></div>
           </div>
         </div>
 
-        <!-- Right column -->
+        <!-- Right: AI recs + chat + recommended -->
         <div style="display:flex;flex-direction:column;gap:16px;">
-
-          <!-- AI Recommendations -->
           <div class="card-flat" style="padding:18px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
               <h2 style="font-size:14px;font-weight:700;" data-i18n>🤖 AI Recommendations</h2>
               <button onclick="loadRecs()" style="background:none;border:none;cursor:pointer;color:var(--text-faint);font-size:16px;" title="Refresh">↻</button>
             </div>
             <div id="rec-list" style="display:flex;flex-direction:column;gap:8px;">
-              {% for rec in recommendations[:4] %}
-              <div style="background:var(--brand-dim);border:1px solid var(--brand-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#bfdbfe;display:flex;gap:6px;">
-                <span style="color:var(--brand-light);flex-shrink:0;">→</span><span>{{ rec }}</span>
-              </div>
-              {% else %}
-              <p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">Click ↻ to load recommendations</p>
-              {% endfor %}
+              <p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">Click ↻ to load</p>
             </div>
           </div>
 
-          <!-- Peer Mentor Chat -->
+          <!-- Chat -->
           <div class="card-flat" style="display:flex;flex-direction:column;overflow:hidden;">
             <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
               <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤝</div>
@@ -269,10 +246,10 @@
                 <p style="font-size:11px;color:#10b981;" data-i18n>Online · AI-powered</p>
               </div>
             </div>
-            <div id="chat-msgs" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:240px;min-height:120px;">
+            <div id="chat-msgs" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:220px;min-height:100px;">
               <div style="display:flex;gap:8px;align-items:flex-end;">
                 <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🤝</div>
-                <div class="chat-bubble-bot">Hi {{ current_user.name.split()[0] }}! 👋 Ask me anything about your courses, career, or study tips.</div>
+                <div class="chat-bubble-bot">Hi {{ current_user.name.split()[0] }}! 👋 Ask me anything about courses, career, or study tips.</div>
               </div>
             </div>
             <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
@@ -300,36 +277,137 @@
               {% endif %}{% endfor %}
             </div>
           </div>
-
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<div id="pg-data" style="display:none;" data-name="{{ current_user.name.split()[0] }}" data-interest="{{ current_user.interest }}"></div>
+<div id="pg-data" style="display:none;"
+  data-name="{{ current_user.name.split()[0] }}"
+  data-interest="{{ current_user.interest }}"
+  data-lang="{{ lang }}"></div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // Animate enrollment bars
-  document.querySelectorAll('.enroll-bar').forEach(el => {
-    requestAnimationFrame(() => { el.style.transition='width 0.8s ease'; el.style.width=el.dataset.w+'%'; });
-  });
-  // Animate skill bars on scroll
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        const el = e.target;
-        el.style.background = el.dataset.color;
-        el.style.transition = 'width 0.9s ease';
-        el.style.width = el.dataset.w + '%';
-        obs.unobserve(el);
-      }
+// ── Chart defaults ────────────────────────────────────────────────────────────
+Chart.defaults.color = 'rgba(230,237,243,0.55)';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+Chart.defaults.font.size = 11;
+
+const BRAND = '#3b82f6', SUCCESS = '#10b981', WARN = '#f59e0b', PURPLE = '#8b5cf6';
+
+function chartDefaults(extra) {
+  return Object.assign({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { maxRotation: 30 } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+    }
+  }, extra);
+}
+
+// ── Load dashboard stats and render charts ────────────────────────────────────
+async function loadCharts() {
+  try {
+    const res = await fetch('/api/dashboard-stats');
+    const d   = await res.json();
+
+    // Course progress bar chart
+    const cp = d.course_progress || [];
+    if (cp.length) {
+      new Chart(document.getElementById('chartProgress'), {
+        type: 'bar',
+        data: {
+          labels: cp.map(r => r.title),
+          datasets: [{
+            data: cp.map(r => r.progress),
+            backgroundColor: cp.map(r => r.progress === 100 ? SUCCESS : r.progress > 50 ? BRAND : WARN),
+            borderRadius: 4,
+          }]
+        },
+        options: chartDefaults({
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ctx.raw + '%' } } },
+          scales: { y: { max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } } }
+        })
+      });
+    } else {
+      document.getElementById('chartProgress').parentElement.innerHTML =
+        '<p style="font-size:12px;color:var(--text-faint);text-align:center;padding:40px 0;">Enroll in courses to see progress</p>';
+    }
+
+    // Quiz scores line chart
+    const qs = d.quiz_scores || [];
+    if (qs.length) {
+      new Chart(document.getElementById('chartQuiz'), {
+        type: 'line',
+        data: {
+          labels: qs.map(r => r.date),
+          datasets: [{
+            data: qs.map(r => r.score),
+            borderColor: BRAND,
+            backgroundColor: 'rgba(59,130,246,0.1)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: qs.map(r => r.passed ? SUCCESS : '#ef4444'),
+            pointRadius: 4,
+          }]
+        },
+        options: chartDefaults({
+          scales: { y: { max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } } }
+        })
+      });
+    } else {
+      document.getElementById('chartQuiz').parentElement.innerHTML =
+        '<p style="font-size:12px;color:var(--text-faint);text-align:center;padding:40px 0;">Take quizzes to see scores</p>';
+    }
+
+    // Skill scores horizontal bar
+    const ss = d.skill_scores || [];
+    const skillLabels = ss.length ? ss.map(r => r.category) : ['Python','Data','Marketing','Finance','English'];
+    const skillData   = ss.length ? ss.map(r => r.score)    : [72, 45, 30, 55, 88];
+    new Chart(document.getElementById('chartSkills'), {
+      type: 'bar',
+      data: {
+        labels: skillLabels,
+        datasets: [{
+          data: skillData,
+          backgroundColor: [BRAND, PURPLE, WARN, SUCCESS, '#06b6d4'],
+          borderRadius: 4,
+        }]
+      },
+      options: chartDefaults({
+        indexAxis: 'y',
+        scales: {
+          x: { max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { grid: { display: false } }
+        }
+      })
     });
-  }, { threshold: 0.3 });
-  document.querySelectorAll('.skill-bar').forEach(el => obs.observe(el));
+
+  } catch(e) {
+    console.warn('Chart load failed', e);
+  }
+}
+
+// ── Enrollment bar animations ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.enroll-bar').forEach(el => {
+    requestAnimationFrame(() => {
+      el.style.transition = 'width 0.8s ease';
+      el.style.width = el.dataset.w + '%';
+    });
+  });
+  loadCharts();
 });
 
+// ── AI Recommendations ────────────────────────────────────────────────────────
 async function loadRecs() {
   const list = document.getElementById('rec-list');
   list.innerHTML = '<p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">Loading…</p>';
@@ -338,22 +416,18 @@ async function loadRecs() {
     const d = await r.json();
     const recs = d.recommendations || [];
     list.innerHTML = recs.length
-      ? recs.map(r => `<div style="background:var(--brand-dim);border:1px solid var(--brand-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#bfdbfe;display:flex;gap:6px;"><span style="color:var(--brand-light);flex-shrink:0;">→</span><span>${esc(r)}</span></div>`).join('')
+      ? recs.map(r => `<div style="background:var(--brand-dim);border:1px solid var(--brand-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#bfdbfe;display:flex;gap:6px;"><span style="color:var(--brand-light);flex-shrink:0;">→</span><span>${esc(r.title || r)}</span></div>`).join('')
       : '<p style="font-size:12px;color:var(--text-faint);text-align:center;padding:12px 0;">No recommendations yet.</p>';
-  } catch { list.innerHTML = '<p style="font-size:12px;color:#f87171;text-align:center;padding:12px 0;">Failed to load.</p>'; }
+  } catch {
+    list.innerHTML = '<p style="font-size:12px;color:#f87171;text-align:center;padding:12px 0;">Failed to load.</p>';
+  }
 }
 
+// ── Chat ──────────────────────────────────────────────────────────────────────
 const pgData = document.getElementById('pg-data');
-const uName = pgData.dataset.name, uInterest = pgData.dataset.interest;
-
-function getLocal(m) {
-  m = m.toLowerCase();
-  if (/^(hi|hello|hey)\b/.test(m)) return `Hey ${uName}! 👋 Ask me about courses, progress, study tips, or career advice.`;
-  return null;
-}
+const uName = pgData.dataset.name;
 
 function renderReply(text) {
-  // Convert **bold** and newlines to HTML
   return String(text)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
@@ -362,22 +436,33 @@ function renderReply(text) {
 
 async function sendChat() {
   const inp = document.getElementById('chat-in');
-  const msg = inp.value.trim(); if (!msg) return;
+  const msg = inp.value.trim();
+  if (!msg) return;
   inp.value = ''; inp.disabled = true;
   const box = document.getElementById('chat-msgs');
   addBubble(box, 'user', esc(msg));
   const tid = 'ty' + Date.now();
-  box.insertAdjacentHTML('beforeend', `<div id="${tid}" style="display:flex;gap:8px;align-items:flex-end;"><div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🤝</div><div class="chat-bubble-bot" style="color:var(--text-faint);">…</div></div>`);
+  box.insertAdjacentHTML('beforeend',
+    `<div id="${tid}" style="display:flex;gap:8px;align-items:flex-end;">
+      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">🤝</div>
+      <div class="chat-bubble-bot" style="color:var(--text-faint);">…</div>
+    </div>`);
   box.scrollTop = box.scrollHeight;
-  const local = getLocal(msg);
   try {
-    let reply;
-    if (local) { await new Promise(r => setTimeout(r, 400)); reply = local; }
-    else { const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})}); reply = (await res.json()).reply || "I'm here to help!"; }
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
     document.getElementById(tid)?.remove();
-    addBubble(box, 'bot', renderReply(reply));
-  } catch { document.getElementById(tid)?.remove(); addBubble(box, 'bot', local || "Connection issue. Try again!"); }
-  finally { inp.disabled = false; inp.focus(); }
+    addBubble(box, 'bot', renderReply(data.reply || "I'm here to help!"));
+  } catch {
+    document.getElementById(tid)?.remove();
+    addBubble(box, 'bot', "Connection issue. Try again!");
+  } finally {
+    inp.disabled = false; inp.focus();
+  }
 }
 
 function addBubble(box, role, html) {
@@ -390,37 +475,33 @@ function addBubble(box, role, html) {
   box.scrollTop = box.scrollHeight;
 }
 
-document.getElementById('chat-in').addEventListener('keypress', e => { if (e.key==='Enter') sendChat(); });
+document.getElementById('chat-in').addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ── Page Translation ──────────────────────────────────────────────────────────
-const USER_LANG = "{{ lang }}";
+const USER_LANG = pgData.dataset.lang || 'en';
 let _pageLang = 'en';
 
 async function translatePage(lang) {
-  if (lang === _pageLang) return;
-  if (lang === 'en') { location.reload(); return; }
-  const nodes = [];
-  const placeholderNodes = [];
-  document.querySelectorAll('[data-i18n]').forEach(el => nodes.push(el));
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => placeholderNodes.push(el));
-  const allStrings = [
+  if (lang === _pageLang || lang === 'en') { if (lang === 'en') location.reload(); return; }
+  const nodes = [...document.querySelectorAll('[data-i18n]')];
+  const pnodes = [...document.querySelectorAll('[data-i18n-placeholder]')];
+  const strings = [
     ...nodes.map(el => el.dataset.i18nOrig || el.textContent.trim()),
-    ...placeholderNodes.map(el => el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder') || '')
+    ...pnodes.map(el => el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder') || '')
   ];
-  if (!allStrings.length) return;
+  if (!strings.length) return;
   try {
     const res = await fetch('/api/translate-page', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({strings: allStrings, lang})
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({strings, lang})
     });
     const data = await res.json();
     nodes.forEach((el, i) => {
       el.dataset.i18nOrig = el.dataset.i18nOrig || el.textContent.trim();
       el.textContent = data.translated[i];
     });
-    placeholderNodes.forEach((el, i) => {
+    pnodes.forEach((el, i) => {
       const idx = nodes.length + i;
       el.dataset.i18nPlaceholderOrig = el.dataset.i18nPlaceholderOrig || el.getAttribute('placeholder');
       el.setAttribute('placeholder', data.translated[idx]);
@@ -430,7 +511,6 @@ async function translatePage(lang) {
 }
 
 async function setAndTranslatePage(lang) {
-  // Save preference
   await fetch('/api/set-language', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({language: lang})});
   await translatePage(lang);
 }

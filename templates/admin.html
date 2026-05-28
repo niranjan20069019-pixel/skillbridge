@@ -18,7 +18,7 @@
       <a href="#notes"     class="flex items-center gap-2 px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all">📄 Notes</a>
     </nav>
     <div class="p-3 border-t" style="border-color:rgba(255,255,255,0.06);">
-      <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body" style="color:rgba(255,255,255,0.4);">← Dashboard</a>
+      <a href="{{ url_for('main.dashboard') }}" class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body" style="color:rgba(255,255,255,0.4);">← Dashboard</a>
     </div>
   </aside>
 
@@ -97,7 +97,8 @@
                 <td class="px-4 py-3 text-xs" style="color:rgba(255,255,255,0.35);">{{ u.joined_at.strftime('%d %b %Y') }}</td>
                 <td class="px-4 py-3">
                   {% if u.email not in ['admin@skillbridge.com'] %}
-                  <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" onsubmit="return confirm('Delete user?')">
+                  <form method="POST" action="{{ url_for('admin.delete_user', user_id=u.id) }}" onsubmit="return confirm('Delete user?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="text-xs px-2 py-1 rounded-lg" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
                   </form>
                   {% endif %}
@@ -115,7 +116,8 @@
         <!-- Add course form -->
         <details class="mb-4 rounded-2xl border p-4" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
           <summary class="cursor-pointer text-sm font-body font-semibold text-white">+ Add New Course</summary>
-          <form method="POST" action="{{ url_for('admin_add_course') }}" class="mt-4 grid grid-cols-2 gap-3">
+          <form method="POST" action="{{ url_for('admin.add_course') }}" class="mt-4 grid grid-cols-2 gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input name="title" placeholder="Title" class="input text-sm" required>
             <input name="category" placeholder="Category" class="input text-sm" required>
             <input name="instructor" placeholder="Instructor" class="input text-sm">
@@ -142,7 +144,8 @@
                 <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ c.category }}</td>
                 <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ c.level }}</td>
                 <td class="px-4 py-3">
-                  <form method="POST" action="{{ url_for('admin_delete_course', course_id=c.id) }}" onsubmit="return confirm('Delete course?')">
+                  <form method="POST" action="{{ url_for('admin.delete_course', course_id=c.id) }}" onsubmit="return confirm('Delete course?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="text-xs px-2 py-1 rounded-lg" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
                   </form>
                 </td>
@@ -166,10 +169,12 @@
               <p class="text-sm font-body mt-1" style="color:rgba(255,255,255,0.6);">{{ m.bio[:100] }}…</p>
             </div>
             <div class="flex gap-2 shrink-0">
-              <form method="POST" action="{{ url_for('admin_approve_mentor', mentor_id=m.id) }}">
+              <form method="POST" action="{{ url_for('admin.approve_mentor', mentor_id=m.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" class="btn-primary text-xs">Approve</button>
               </form>
-              <form method="POST" action="{{ url_for('admin_reject_mentor', mentor_id=m.id) }}">
+              <form method="POST" action="{{ url_for('admin.reject_mentor', mentor_id=m.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" class="btn-ghost text-xs">Reject</button>
               </form>
             </div>
@@ -199,7 +204,8 @@
             </div>
             <p class="text-sm font-body mb-3" style="color:rgba(255,255,255,0.6);">{{ d.message }}</p>
             {% if d.status == 'pending' %}
-            <form method="POST" action="{{ url_for('admin_reply_doubt', doubt_id=d.id) }}" class="flex gap-2">
+            <form method="POST" action="{{ url_for('admin.reply_doubt', doubt_id=d.id) }}" class="flex gap-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input name="reply" placeholder="Reply to this doubt…" class="input text-sm flex-1" required>
               <button type="submit" class="btn-primary text-sm">Reply</button>
             </form>
@@ -228,13 +234,15 @@
             {% for q in quiz.questions %}
             <div class="flex items-start gap-3 py-2 border-t" style="border-color:rgba(255,255,255,0.05);">
               <p class="text-sm font-body text-white flex-1">{{ loop.index }}. {{ q.question }}</p>
-              <form method="POST" action="{{ url_for('admin_delete_question', q_id=q.id) }}" onsubmit="return confirm('Delete question?')">
+              <form method="POST" action="{{ url_for('admin.delete_question', q_id=q.id) }}" onsubmit="return confirm('Delete question?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" class="text-xs px-2 py-1 rounded-lg shrink-0" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
               </form>
             </div>
             {% endfor %}
             <!-- Add question form -->
-            <form method="POST" action="{{ url_for('admin_add_question', quiz_id=quiz.id) }}" class="mt-4 grid grid-cols-2 gap-2">
+            <form method="POST" action="{{ url_for('admin.add_question', quiz_id=quiz.id) }}" class="mt-4 grid grid-cols-2 gap-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <textarea name="question" placeholder="Question text" class="input text-sm col-span-2" rows="2" required></textarea>
               <input name="option_a" placeholder="Option A" class="input text-sm" required>
               <input name="option_b" placeholder="Option B" class="input text-sm" required>
@@ -261,7 +269,8 @@
         <h2 class="font-display font-bold text-xl text-white mb-4">📄 Notes Upload</h2>
         <details class="mb-4 rounded-2xl border p-4" style="background:#0f172a;border-color:rgba(255,255,255,0.07);">
           <summary class="cursor-pointer text-sm font-body font-semibold text-white">+ Upload New Notes</summary>
-          <form method="POST" action="{{ url_for('admin_upload_notes') }}" enctype="multipart/form-data" class="mt-4 grid grid-cols-2 gap-3">
+          <form method="POST" action="{{ url_for('admin.upload_notes') }}" enctype="multipart/form-data" class="mt-4 grid grid-cols-2 gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <select name="course_id" class="input text-sm" required>
               <option value="">Select Course…</option>
               {% for c in all_courses %}
@@ -298,7 +307,8 @@
                 <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ n.language }}</td>
                 <td class="px-4 py-3" style="color:rgba(255,255,255,0.5);">{{ n.downloads }}</td>
                 <td class="px-4 py-3">
-                  <form method="POST" action="{{ url_for('admin_delete_note', note_id=n.id) }}" onsubmit="return confirm('Delete note?')">
+                  <form method="POST" action="{{ url_for('admin.delete_note', note_id=n.id) }}" onsubmit="return confirm('Delete note?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="text-xs px-2 py-1 rounded-lg" style="background:rgba(239,68,68,0.12);color:#f87171;">Delete</button>
                   </form>
                 </td>

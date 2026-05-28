@@ -53,6 +53,7 @@
 
   <!-- Form -->
   <form id="quiz-form" method="POST" action="/quiz/{{ course.id }}/submit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div id="questions-container" style="display:flex;flex-direction:column;gap:16px;">
       {% for q in questions %}
       <div class="card-flat" style="padding:20px;" data-qid="{{ q.id }}">

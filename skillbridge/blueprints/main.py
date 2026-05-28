@@ -13,7 +13,7 @@ from ..models import (User, Course, Enrollment, CompletedModule, Certificate,
                       SkillPathEnrollment, PathStepProgress, LearningAnalytics,
                       CourseNote, Badge)
 from ..data import (SKILL_RECOMMENDATIONS, SKILL_PATHS, PATH_NOTES,
-                    SUBTITLE_LANGS, COURSE_NOTES, I18N)
+                    SUBTITLE_LANGS, COURSE_NOTES, I18N, SUPPORTED_LANGUAGES)
 from ..gamification import get_or_create_profile, award_xp
 
 bp = Blueprint("main", __name__)
@@ -21,8 +21,8 @@ bp = Blueprint("main", __name__)
 
 @bp.route("/")
 def index():
-    from ..app import app as _app  # avoid circular — use current_app instead
-    return render_template("index.html")
+    courses = Course.query.all()
+    return render_template("index.html", courses=courses)
 
 
 @bp.route("/dashboard")
@@ -33,9 +33,14 @@ def dashboard():
     my_badges    = UserBadge.query.filter_by(user_id=current_user.id).all()
     skill_score  = min(100, profile.xp // 10)
     now          = datetime.utcnow()
+    all_courses  = Course.query.all()
+    lang         = current_user.language or "en"
+    from ..data import SUPPORTED_LANGUAGES
     return render_template("dashboard.html",
         enrollments=enrollments, profile=profile,
         my_badges=my_badges, skill_score=skill_score, now=now,
+        all_courses=all_courses, recommendations=[],
+        lang=lang, SUPPORTED_LANGUAGES=SUPPORTED_LANGUAGES,
     )
 
 
@@ -43,7 +48,10 @@ def dashboard():
 @login_required
 def my_courses():
     enrollments = Enrollment.query.filter_by(user_id=current_user.id).order_by(Enrollment.enrolled_at.desc()).all()
-    return render_template("my_courses.html", enrollments=enrollments)
+    from ..data import SUPPORTED_LANGUAGES
+    return render_template("my_courses.html", enrollments=enrollments,
+                           lang=current_user.language or "en",
+                           SUPPORTED_LANGUAGES=SUPPORTED_LANGUAGES)
 
 
 @bp.route("/progress")
@@ -69,9 +77,10 @@ def courses():
         q = q.filter_by(category=category)
     all_courses = q.all()
     categories  = db.session.query(Course.category).distinct().all()
+    search_q = request.args.get("q", "")
     return render_template("courses.html", courses=all_courses,
                            categories=[c[0] for c in categories],
-                           selected_category=category)
+                           selected_category=category, search_q=search_q)
 
 
 @bp.route("/learn/<int:course_id>")
@@ -87,9 +96,19 @@ def learn(course_id):
     notes_files = CourseNote.query.filter_by(course_id=course_id).all()
     lang        = current_user.language if current_user.language in ("en","hi","kn","ta","te") else "en"
     course_notes = COURSE_NOTES.get(course.title, "")
+    modules = course.get_modules()
+    completed_indices = {r.module_idx for r in CompletedModule.query.filter_by(
+        user_id=current_user.id, course_id=course_id).all()}
+    for i, mod in enumerate(modules):
+        mod["completed"] = i in completed_indices
+    all_courses = Course.query.all()
+    supported_languages = SUPPORTED_LANGUAGES
+    user_language = current_user.language or "en"
     return render_template("learn.html", course=course, enrollment=enrollment,
                            notes_files=notes_files, course_notes=course_notes,
-                           lang=lang, I18N=I18N)
+                           modules=modules, all_courses=all_courses,
+                           supported_languages=supported_languages,
+                           user_language=user_language, lang=lang, I18N=I18N)
 
 
 @bp.route("/enroll/<int:course_id>", methods=["POST"])
@@ -121,7 +140,8 @@ def skill_paths():
             ).count()
             progress_map[slug] = round(done / len(path["steps"]) * 100)
     return render_template("skill_paths.html", paths=SKILL_PATHS,
-                           enrolled_slugs=enrolled_slugs, progress_map=progress_map)
+                           enrolled_slugs=enrolled_slugs, progress_map=progress_map,
+                           lang=current_user.language or "en")
 
 
 @bp.route("/skill-paths/<slug>")
@@ -166,7 +186,15 @@ def enroll_skill_path(slug):
 @login_required
 def mentors():
     approved = MentorProfile.query.filter_by(approved=True).all()
-    return render_template("mentors.html", mentors=approved)
+    skill_filter = request.args.get("skill", "")
+    from ..models import User as _User2
+    matched = []
+    if current_user.interest:
+        for m in approved:
+            if current_user.interest.lower() in (m.skills or "").lower():
+                matched.append(m)
+    return render_template("mentors.html", mentors=approved,
+                           skill_filter=skill_filter, matched=matched)
 
 
 @bp.route("/mentors/apply", methods=["GET", "POST"])
@@ -187,7 +215,8 @@ def mentor_apply():
         db.session.commit()
         flash("Application submitted! An admin will review it shortly.", "success")
         return redirect(url_for("main.mentors"))
-    return render_template("mentor_apply.html")
+    existing = MentorProfile.query.filter_by(user_id=current_user.id).first()
+    return render_template("mentor_apply.html", existing=existing)
 
 
 @bp.route("/mentors/<int:mentor_id>/rate", methods=["POST"])
@@ -240,7 +269,13 @@ def take_quiz(course_id):
         flash("No quiz available for this course yet.", "info")
         return redirect(url_for("main.learn", course_id=course_id))
     questions = quiz.questions.all()
-    return render_template("quiz.html", course=course, quiz=quiz, questions=questions)
+    from ..data import SUPPORTED_LANGUAGES
+    attempts = QuizAttempt.query.filter_by(
+        user_id=current_user.id, course_id=course_id
+    ).order_by(QuizAttempt.attempted_at.desc()).all()
+    return render_template("quiz.html", course=course, quiz=quiz,
+                           questions=questions, attempts=attempts,
+                           SUPPORTED_LANGUAGES=SUPPORTED_LANGUAGES)
 
 
 @bp.route("/quiz/<int:course_id>/submit", methods=["POST"])
@@ -282,10 +317,18 @@ def submit_quiz(course_id):
                     cert_id=str(uuid.uuid4()),
                 ))
     db.session.commit()
+    cert = Certificate.query.filter_by(user_id=current_user.id, course_id=course_id).first() if passed else None
+    results = [
+        {"question": q.question, "correct": q.correct,
+         "chosen": request.form.get(f"q_{q.id}"),
+         "is_correct": request.form.get(f"q_{q.id}") == q.correct,
+         "options": {"a": q.option_a, "b": q.option_b, "c": q.option_c, "d": q.option_d},
+         "explanation": q.explanation}
+        for q in questions
+    ]
     return render_template("quiz_result.html", course=course, quiz=quiz,
                            score=score, passed=passed, correct_q=correct_q,
-                           total_q=total_q, questions=questions,
-                           answers={f"q_{q.id}": request.form.get(f"q_{q.id}") for q in questions})
+                           total_q=total_q, results=results, cert=cert)
 
 
 @bp.route("/certificate/<int:course_id>")

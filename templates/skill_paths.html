@@ -22,14 +22,14 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
-      <a href="{{ url_for('courses') }}" class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
-      <a href="{{ url_for('skill_paths') }}" class="nav-link active"><span>🗺️</span><span>Skill Paths</span></a>
-      <a href="{{ url_for('gamification') }}" class="nav-link"><span>🏆</span><span>Achievements</span></a>
-      <a href="{{ url_for('mentors') }}" class="nav-link"><span>🤝</span><span>Mentors</span></a>
+      <a href="{{ url_for('main.dashboard') }}" class="nav-link"><span>🏠</span><span>Overview</span></a>
+      <a href="{{ url_for('main.courses') }}" class="nav-link"><span>🔍</span><span>Browse Courses</span></a>
+      <a href="{{ url_for('main.skill_paths') }}" class="nav-link active"><span>🗺️</span><span>Skill Paths</span></a>
+      <a href="{{ url_for('main.gamification') }}" class="nav-link"><span>🏆</span><span>Achievements</span></a>
+      <a href="{{ url_for('main.mentors') }}" class="nav-link"><span>🤝</span><span>Mentors</span></a>
     </nav>
     <div class="sidebar-footer">
-      <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
+      <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color:var(--danger);"><span>🚪</span><span>Logout</span></a>
     </div>
   </aside>
 
@@ -59,7 +59,7 @@
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
         {% for path in paths %}
         {% set pct = progress_map.get(path.slug, 0) %}
-        <a href="{{ url_for('skill_path_detail', slug=path.slug) }}" class="card" style="padding:22px;display:block;text-decoration:none;">
+        <a href="{{ url_for('main.skill_path_detail', slug=path.slug) }}" class="card" style="padding:22px;display:block;text-decoration:none;">
           <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;">
             <div style="width:48px;height:48px;border-radius:12px;background:{{ path.color }}18;border:1px solid {{ path.color }}33;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">{{ path.icon }}</div>
             <div style="flex:1;min-width:0;">

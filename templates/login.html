@@ -28,6 +28,7 @@
     <!-- Form card -->
     <div class="card anim-fade-up delay-1" style="padding:32px;">
       <form method="POST" action="/login" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
         <div style="margin-bottom:18px;">
           <label class="field-label" for="login-email">Email Address</label>

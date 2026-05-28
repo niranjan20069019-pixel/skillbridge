@@ -106,4 +106,4 @@ echo ""
 export FLASK_ENV=development
 export PYTHONPATH="$SCRIPT_DIR"
 
-$PYTHON app.py
+$PYTHON run.py
