@@ -53,7 +53,7 @@ for /f "tokens=*" %%V in ('python --version 2^>^&1') do echo  [OK]   %%V found.
 
 :: ── Install dependencies ──────────────────────────────────────
 echo  [INFO] Installing / verifying dependencies...
-python -m pip install -r requirements.txt --quiet
+python -m pip install --upgrade pip --quiet && python -m pip install -r requirements.txt --quiet
 if %errorlevel% neq 0 (
     echo  [ERROR] Failed to install dependencies.
     pause

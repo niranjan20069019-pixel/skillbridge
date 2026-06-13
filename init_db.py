@@ -1,15 +1,9 @@
-"""init_db.py — Bootstrap DB and run Flask-Migrate for the first time."""
+"""init_db.py — Bootstrap DB and seed data."""
 import eventlet
 eventlet.monkey_patch()
 
-from app import create_app
-from skillbridge.extensions import db
+from app import create_app, init_database
 
 app = create_app()
-
-with app.app_context():
-    # flask db init  (run once to create migrations/ folder)
-    # flask db migrate -m "initial"
-    # flask db upgrade
-    db.create_all()
-    print("✅ Database tables created.")
+init_database(app)
+print("Done")

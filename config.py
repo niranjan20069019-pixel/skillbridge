@@ -7,6 +7,10 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-production")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600          # 1 hour
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
@@ -28,14 +32,12 @@ class Config:
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-    # Database configuration - supports both SQLite and PostgreSQL
+    # Database configuration — supports MySQL (via DATABASE_URL), PostgreSQL, or SQLite
     @property
     def SQLALCHEMY_DATABASE_URI(self):
-        # Check if DATABASE_URL is explicitly set (for PostgreSQL)
         database_url = os.environ.get("DATABASE_URL")
         if database_url:
             return database_url
-        # Fallback to SQLite for development
         return os.environ.get(
             "DATABASE_URL",
             "sqlite:///" + os.path.join(BASE_DIR, "instance", "skillbridge.db"),

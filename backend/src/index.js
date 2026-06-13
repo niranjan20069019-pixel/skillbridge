@@ -7,6 +7,10 @@ import { logger } from './utils/logger.js'
 import { aiRouter } from './routes/ai.js'
 import { authRouter } from './routes/auth.js'
 
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection:', reason)
+})
+
 const app = express()
 const PORT = process.env.PORT || 3001
 

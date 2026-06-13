@@ -3,10 +3,11 @@ import eventlet
 eventlet.monkey_patch()
 
 import os
-from app import create_app
+from app import create_app, init_database
 from realtime_chat import socketio
 
 app = create_app()
+init_database(app)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

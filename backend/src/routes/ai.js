@@ -1,7 +1,25 @@
 import { Router } from 'express'
 import { generateChatResponse, translateText, detectLanguage } from '../services/gemini.js'
 import { generateChatResponseOpenAI, translateTextOpenAI, detectLanguageOpenAI } from '../services/openai.js'
+import { translateTextFree } from '../services/free-translate.js'
 import { logger } from '../utils/logger.js'
+
+const UNICODE_RANGES = {
+  hi: [/[\u0900-\u097F]/, /[\uA8E0-\uA8FF]/],
+  kn: [/[\u0C80-\u0CFF]/],
+  ta: [/[\u0B80-\u0BFF]/],
+  te: [/[\u0C00-\u0C7F]/],
+  ml: [/[\u0D00-\u0D7F]/],
+  mr: [/[\u0900-\u097F]/, /[\uA8E0-\uA8FF]/],
+  bn: [/[\u0980-\u09FF]/],
+}
+
+function quickDetect(text) {
+  for (const [code, ranges] of Object.entries(UNICODE_RANGES)) {
+    if (ranges.some(r => r.test(text))) return code
+  }
+  return null
+}
 
 export const aiRouter = Router()
 
@@ -9,12 +27,11 @@ const CHAT_TIMEOUT = 45000
 const TRANSLATE_TIMEOUT = 30000
 
 function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
-    ),
-  ])
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
 }
 
 aiRouter.post('/chat', async (req, res) => {
@@ -88,16 +105,7 @@ aiRouter.post('/translate', async (req, res) => {
     }
 
     if (!source_lang || source_lang === 'auto') {
-      try {
-        if (process.env.GEMINI_API_KEY) {
-          source_lang = await detectLanguage(text)
-        }
-        if (!source_lang || source_lang === 'auto') {
-          source_lang = await detectLanguageOpenAI(text)
-        }
-      } catch {
-        source_lang = 'en'
-      }
+      source_lang = quickDetect(text) || 'en'
     }
 
     if (!validLangs.includes(source_lang || '')) {
@@ -107,7 +115,14 @@ aiRouter.post('/translate', async (req, res) => {
     let translation = null
     let provider = 'fallback'
 
-    if (process.env.GEMINI_API_KEY) {
+    try {
+      translation = await translateTextFree(text, source_lang, target_lang)
+      if (translation) provider = 'free'
+    } catch (err) {
+      logger.warn('Free translation failed:', err.message)
+    }
+
+    if (!translation && process.env.GEMINI_API_KEY) {
       try {
         translation = await withTimeout(
           translateText(text, source_lang, target_lang),
