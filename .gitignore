@@ -48,3 +48,15 @@ build/
 
 # Uploads
 uploads/
+
+# secrets
+.env
+backend/.env
+*.env
+!.env.example
+uploads/
+logs/
+__pycache__/
+*.pyc
+venv/
+instance/

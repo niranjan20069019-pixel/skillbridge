@@ -274,12 +274,18 @@ def track_analytics():
     if not event_type:
         return jsonify({"error": "event_type required"}), 400
     course = db.session.get(Course, course_id) if course_id else None
+
+    def _int(v):
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
     db.session.add(LearningAnalytics(
         user_id    = current_user.id,
         course_id  = course_id,
         event_type = event_type,
-        watch_secs = int(data.get("watch_secs", 0)),
-        score      = int(data.get("score", 0)),
+        watch_secs = _int(data.get("watch_secs", 0)),
+        score      = _int(data.get("score", 0)),
         category   = course.category if course else data.get("category", ""),
     ))
     db.session.commit()

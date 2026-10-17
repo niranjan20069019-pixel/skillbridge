@@ -8,6 +8,9 @@ from skillbridge.blueprints.api import bp as api_bp
 from skillbridge.blueprints.main import bp as main_bp
 from realtime_chat import socketio
 from config import get_config
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def create_app(config_class=None):
@@ -21,6 +24,9 @@ def create_app(config_class=None):
     cfg = config_class or get_config()
     if isinstance(cfg, type):
         cfg = cfg()
+    # Fail fast in production on missing SECRET_KEY etc.
+    if cfg.__class__.__name__ == "ProductionConfig":
+        cfg.validate()
     app.config.from_object(cfg)
 
     # Ensure DATABASE_URI is set (from property or fallback)
@@ -40,7 +46,9 @@ def create_app(config_class=None):
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "info"
     csrf.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*", async_mode="eventlet")
+    socketio.init_app(app, cors_allowed_origins=os.environ.get(
+        "SOCKETIO_ORIGINS", "http://localhost:5000,http://localhost:5173"
+    ).split(","), async_mode="eventlet")
 
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
@@ -73,9 +81,10 @@ def create_app(config_class=None):
         try:
             db.engine.connect()
             status["database"] = "connected"
-        except Exception as e:
+        except Exception:
             status["status"] = "error"
-            status["database"] = str(e)
+            status["database"] = "unavailable"
+            log.exception("Health check DB failure")
         return jsonify(status)
 
     return app

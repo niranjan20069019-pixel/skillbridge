@@ -53,7 +53,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
-    SESSION_COOKIE_SECURE   = os.environ.get("SESSION_COOKIE_SECURE", "False").lower() == "true"
+    SESSION_COOKIE_SECURE   = os.environ.get("SESSION_COOKIE_SECURE", "True").lower() == "true"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
     PREFERRED_URL_SCHEME    = os.environ.get("PREFERRED_URL_SCHEME", "http")

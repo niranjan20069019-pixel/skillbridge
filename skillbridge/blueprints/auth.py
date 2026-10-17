@@ -2,6 +2,7 @@
 import re
 import time
 from collections import defaultdict
+from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from ..extensions import db
@@ -16,6 +17,7 @@ _failed_attempts: dict = defaultdict(list)
 _MAX_ATTEMPTS = 5
 _WINDOW_SECS  = 300   # 5 minutes
 _LOCKOUT_SECS = 600   # 10 minutes
+_MAX_TRACKED_IPS = 10000  # ponytail: cap memory; switch to Redis if rate-limiting matters at scale
 
 
 def _check_rate_limit(ip: str) -> tuple[bool, int]:
@@ -35,6 +37,8 @@ def _check_rate_limit(ip: str) -> tuple[bool, int]:
 
 
 def _record_failure(ip: str):
+    if len(_failed_attempts) >= _MAX_TRACKED_IPS:
+        _failed_attempts.pop(next(iter(_failed_attempts)))
     _failed_attempts[ip].append(time.time())
 
 
@@ -129,10 +133,15 @@ def login():
                 flash("Your account has been deactivated. Contact support.", "danger")
                 return redirect(url_for("auth.login"))
             _clear_failures(ip)
+            _next = request.args.get("next")
+            if not (_next and _next.startswith("/")
+                    and not _next.startswith("//")
+                    and urlparse(_next).scheme in ("", "http", "https")
+                    and urlparse(_next).netloc in ("", request.host)):
+                _next = None
             login_user(user, remember=True)
-            next_page = request.args.get("next")
             flash(f"Welcome back, {user.name}!", "success")
-            return redirect(next_page or url_for("main.dashboard"))
+            return redirect(_next or url_for("main.dashboard"))
 
         _record_failure(ip)
         remaining_attempts = _MAX_ATTEMPTS - len(_failed_attempts[ip])

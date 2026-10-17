@@ -125,10 +125,16 @@ def delete_user(user_id):
 @login_required
 @admin_required
 def add_course():
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    category = request.form.get("category", "").strip()
+    if not (title and description and category):
+        flash("Title, description and category are required.", "error")
+        return redirect(url_for("admin.dashboard") + "#courses")
     c = Course(
-        title=request.form["title"],
-        description=request.form["description"],
-        category=request.form["category"],
+        title=title,
+        description=description,
+        category=category,
         level=request.form.get("level", "Beginner"),
         instructor=request.form.get("instructor", "SkillBridge Faculty"),
         youtube_id=request.form.get("youtube_id", ""),

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { randomBytes, createHash } from 'crypto'
+import { randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 import { logger } from '../utils/logger.js'
 
 export const authRouter = Router()
@@ -14,8 +14,18 @@ function createSession(user) {
   return token
 }
 
-function hashPassword(password) {
-  return createHash('sha256').update(password + 'skillbridge-salt').digest('hex')
+function hashPassword(password, salt) {
+  const s = salt || randomBytes(16).toString('hex')
+  const hash = scryptSync(password, s, 64).toString('hex')
+  return salt ? { hash, salt } : `${hash}:${s}`
+}
+
+function verifyPassword(password, stored) {
+  const [hash, salt] = String(stored).split(':')
+  if (!hash || !salt) return false
+  const candidate = scryptSync(password, salt, 64)
+  const expected = Buffer.from(hash, 'hex')
+  return candidate.length === expected.length && timingSafeEqual(candidate, expected)
 }
 
 authRouter.post('/register', async (req, res) => {
@@ -71,7 +81,7 @@ authRouter.post('/login', async (req, res) => {
     }
 
     const user = users.find(u => u.email === email)
-    if (!user || user.passwordHash !== hashPassword(password)) {
+    if (!user || !verifyPassword(password, user.passwordHash)) {
       return res.status(401).json({ error: 'Invalid email or password' })
     }
 

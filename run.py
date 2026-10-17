@@ -7,6 +7,8 @@ from app import create_app, init_database
 from realtime_chat import socketio
 
 app = create_app()
+# Called at import time too: Procfile/Dockerfile run gunicorn "run:app",
+# where __main__ never executes — tables/seeds are idempotent (count() guards).
 init_database(app)
 
 if __name__ == "__main__":
