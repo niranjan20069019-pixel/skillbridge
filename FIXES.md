@@ -102,3 +102,16 @@ Checked every deploy path: Procfile, Dockerfile, docker-compose.yml, render.yaml
 ## Remaining deploy notes (skipped deliberately, ponytail)
 - `docker-compose.yaml` sets a `REDIS_URL` env and runs a redis service the app never uses — harmless dead env, remove when touching compose next.
 - `run.sh`'s `source .env` chokes on quotes/spaces in values — cosmetic; only affects the dev launcher.
+
+---
+
+# Part 3 — Render deploy failure (2026-10-17)
+
+## F1 — Build died compiling pandas on Python 3.14
+**Symptom (from the Render build log).** `metadata-generation-failed` × pandas; inside it, C++ errors like `error: standard attributes in middle of decl-specifiers` in `pandas/_libs/window/aggregations.pyx.cpp` against `/opt/render/project/python/Python-3.14.3/include/python3.14`.
+**Diagnosis. NOT a project bug.** The chain: `requirements.txt` pins `pandas==2.2.2` → pandas 2.2.2 has no prebuilt wheel for Python 3.14 (`cp314` — it predates that release) → Render provisioned Python 3.14.3 because no version was set → pip fell back to building pandas from source → the generated Cython/C++ does not compile against that toolchain → build fails. The `render.yaml` file has `PYTHON_VERSION: 3.12` — but that only applies when the service is created **as a Render Blueprint from that file**. This deploy was a manually created web service, so the setting was never picked up.
+**Fix.** Added a `.python-version` file (`3.12.4`) at the repo root — Render reads it for both blueprint and manual services, so the correct interpreter is chosen before pip runs. No code or requirements change needed.
+**Do you need to change deployment platform? No.** The app itself boots clean on Render's model (gunicorn + eventlet, single web service + managed Postgres, verified in Part 2). Just make sure of two things on the service settings:
+1. Python version — now enforced by `.python-version` (readonly: env var `PYTHON_VERSION=3.12` achieves the same if you prefer).
+2. If you created the service manually, mirror the env vars from `render.yaml`: `FLASK_ENV=production`, `SECRET_KEY` (generate), `DATABASE_URL` (from the Render Postgres), `SOCKETIO_ORIGINS=https://<your-domain>`.
+Alternative if you ever want newer Python: bump `pandas`/`scikit-learn`/`numpy` pins to releases with `cp314` wheels — unnecessary churn, don't.
