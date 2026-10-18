@@ -90,6 +90,9 @@ def create_app(config_class=None):
     return app
 
 
+app = create_app()
+
+
 def init_database(app):
     """Create tables and seed data. Call this explicitly after create_app()."""
     with app.app_context():
